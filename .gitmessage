@@ -1,0 +1,19 @@
+# Commit message template
+# 
+# Format: <type>: <description>
+#
+# Types:
+# - feat: new feature
+# - fix: bug fix
+# - docs: documentation
+# - style: formatting, missing semicolons, etc.
+# - refactor: code change that neither fixes a bug nor adds a feature
+# - test: adding missing tests
+# - chore: maintain, deps, etc.
+#
+# Example:
+# feat: add snap package support
+#
+# - Added snapcraft.yaml configuration
+# - Implemented dual-workflow architecture
+# - Enhanced release process with multiple formats

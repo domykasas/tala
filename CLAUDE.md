@@ -51,6 +51,8 @@ go build -o tala
 
 **Change Documentation**: After making any significant file updates, bug fixes, or feature additions, always update CHANGELOG.md with the changes following the Keep a Changelog format. This ensures proper version history tracking.
 
+**Commit Messages**: Do not include Claude Code attribution or co-authorship lines in commit messages. Keep commits clean and professional without AI assistant signatures.
+
 **Release Workflows**: The project uses a dual-workflow architecture for optimal release management:
 
 **pre-release.yml** (Automatic Pre-releases):
