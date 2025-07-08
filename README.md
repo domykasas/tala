@@ -1,6 +1,6 @@
 # Tala - Terminal AI Language Assistant
 
-![Version](https://img.shields.io/badge/version-0.0.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![Go](https://img.shields.io/badge/Go-1.24.4+-00ADD8.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 

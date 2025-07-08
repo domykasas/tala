@@ -4,11 +4,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Tala is a terminal-based AI language assistant built with Go and Bubble Tea. It provides an interactive interface for communicating with various AI providers including OpenAI, Anthropic, and Ollama.
 
+## Prerequisites
+
+- Go 1.24.4 or later (as specified in go.mod)
+- For default setup: Ollama with deepseek-r1 model
+- For OpenAI/Anthropic: Valid API keys
+
 ## Development Commands
 
 ### Testing
 ```bash
+# Run all tests
 go test ./...
+
+# Run tests with verbose output
+go test ./... -v
+
+# Run specific package tests
+go test ./config -v
+go test ./ai -v
+go test ./fileops -v
+
+# Run tests with coverage
+go test ./... -cover
+
+# Run specific test function
+go test ./ai -run TestOllamaProvider
+
+# Run tests with race detection
+go test -race ./...
+
+# Run tests with timeout
+go test -timeout=30s ./...
 ```
 
 ### Building
@@ -19,6 +46,42 @@ go build -o tala
 **Note**: When helping with Tala development, do not build the application or delete the `tala` binary file. The user will build it themselves.
 
 **Important**: Always remember to update ROADMAP.md when making significant changes or releases. The roadmap should reflect current development status and future plans.
+
+**Version Management**: When releasing new versions, remember to update the version badge in README.md from `![Version](https://img.shields.io/badge/version-X.X.X-blue.svg)` to match the new version number.
+
+**Change Documentation**: After making any significant file updates, bug fixes, or feature additions, always update CHANGELOG.md with the changes following the Keep a Changelog format. This ensures proper version history tracking.
+
+**Release Workflows**: The project uses a dual-workflow architecture for optimal release management:
+
+**pre-release.yml** (Automatic Pre-releases):
+- **Trigger**: Merged PRs to main branch
+- **Purpose**: Continuous testing and validation - provides immediate testing releases
+- **Version Pattern**: Auto-increments RC numbers (v0.1.0-rc.1, v0.1.0-rc.2, etc.)
+- **Benefit**: Stakeholders can test features immediately after merge without manual intervention
+
+**release.yml** (Manual Releases):
+- **Trigger**: Tag pushes + manual dispatch option
+- **Purpose**: Official releases when ready for production
+- **Version Classification**:
+  - `v*.*.*-rc*` = Pre-release (supports both `v0.1.0-rc1` and `v0.1.0-rc.1` formats)
+  - `v*.0.0` = Major Release
+  - `v*.*.*` = Regular Release
+- **Benefit**: Full control over official release timing
+
+**Development Workflow**:
+```
+Development → PR → Merge → pre-release.yml → v0.1.0-rc.1 (automatic)
+                                          → v0.1.0-rc.2 (automatic)
+Ready for release → Push tag → release.yml → v0.1.0 (manual)
+```
+
+**Architecture Benefits**:
+- ✅ Automatic testing releases for immediate feedback
+- ✅ Manual control over official releases
+- ✅ Clear separation of automated vs intentional releases
+- ✅ Flexibility to create both RC formats
+
+Both workflows build cross-platform binaries (Linux, Windows, macOS) for amd64 and arm64 architectures, automatically extract changelog from CHANGELOG.md, create SHA256 checksums, and provide comprehensive release notes.
 
 ### Dependencies
 ```bash
@@ -42,6 +105,7 @@ tala/
 ├── ai/                  # AI provider implementations
 │   ├── provider.go      # Provider interface and implementations
 │   ├── provider_test.go # Provider tests
+│   ├── intent.go        # AI-powered intent detection
 │   ├── tools.go         # File operation tools for AI
 │   └── tools_test.go    # AI tools tests
 ├── fileops/             # File system operations
@@ -228,22 +292,20 @@ export DEBUG=1
 ./tala
 ```
 
-### Testing Individual Components
+### Additional Testing Options
 ```bash
-# Test specific package
-go test ./config -v
+# Test with coverage and generate HTML report
+go test ./... -cover -coverprofile=coverage.out
+go tool cover -html=coverage.out
 
-# Test with coverage
-go test ./... -cover
+# Benchmark tests
+go test -bench=. ./...
 
-# Run specific test
-go test ./ai -run TestOllamaProvider
+# Test with memory profiling
+go test -memprofile=mem.prof ./...
 
-# Run tests with race detection
-go test -race ./...
-
-# Run tests with timeout
-go test -timeout=30s ./...
+# Test with CPU profiling
+go test -cpuprofile=cpu.prof ./...
 ```
 
 ## Adding New Providers
@@ -312,7 +374,7 @@ Current coverage focuses on:
 **Direct Commands (prefix with `/`)**
 ```
 /help               - Show all available commands
-/ls [path]          - List files and directories
+/ls [path]          - List files and directories  
 /cat <file>         - Display file content
 /create <file> [content] - Create new file with optional content
 /write <file> <content>  - Write content to file (create or overwrite)
@@ -324,6 +386,14 @@ Current coverage focuses on:
 /mv <src> <dst>     - Move/rename file
 /pwd                - Show current directory
 /cd <path>          - Change directory
+```
+
+**Terminal Controls**
+```
+Enter               - Send message/command
+Ctrl+C              - Quit application
+Ctrl+L              - Clear screen and reset session stats
+Backspace           - Delete characters from input
 ```
 
 **AI Natural Language Examples**
