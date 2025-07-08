@@ -60,10 +60,12 @@ Tala uses a JSON configuration file located at `~/.config/tala/config.json`.
   "provider": "ollama",
   "model": "deepseek-r1",
   "temperature": 0.7,
-  "max_tokens": 1000,
+  "max_tokens": 0,
   "system_prompt": "You are a helpful AI assistant."
 }
 ```
+
+**Note**: `max_tokens: 0` means unlimited tokens (no limit on response length).
 
 ### Supported Providers
 
@@ -84,7 +86,7 @@ To use OpenAI or Anthropic, edit your config file:
   "provider": "openai",
   "model": "gpt-4",
   "temperature": 0.7,
-  "max_tokens": 1000,
+  "max_tokens": 0,
   "system_prompt": "You are a helpful AI assistant."
 }
 ```

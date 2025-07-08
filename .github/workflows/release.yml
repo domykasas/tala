@@ -125,24 +125,27 @@ jobs:
         # Create build directory
         mkdir -p build
         
-        # Build for different platforms
+        # Extract version for filename
+        VERSION=${{ steps.release-type.outputs.tag_name }}
+        
+        # Build for different platforms with version in filename
         echo "Building for Linux (amd64)..."
-        GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${{ steps.release-type.outputs.tag_name }}" -o build/tala-linux-amd64 .
+        GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-linux-amd64 .
         
         echo "Building for Linux (arm64)..."
-        GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=${{ steps.release-type.outputs.tag_name }}" -o build/tala-linux-arm64 .
+        GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-linux-arm64 .
         
         echo "Building for Windows (amd64)..."
-        GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=${{ steps.release-type.outputs.tag_name }}" -o build/tala-windows-amd64.exe .
+        GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-windows-amd64.exe .
         
         echo "Building for Windows (arm64)..."
-        GOOS=windows GOARCH=arm64 go build -ldflags "-X main.version=${{ steps.release-type.outputs.tag_name }}" -o build/tala-windows-arm64.exe .
+        GOOS=windows GOARCH=arm64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-windows-arm64.exe .
         
         echo "Building for macOS (amd64)..."
-        GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${{ steps.release-type.outputs.tag_name }}" -o build/tala-macos-amd64 .
+        GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-macos-amd64 .
         
         echo "Building for macOS (arm64)..."
-        GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=${{ steps.release-type.outputs.tag_name }}" -o build/tala-macos-arm64 .
+        GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-macos-arm64 .
 
     - name: Create checksums
       if: steps.release-type.outputs.manual_dispatch == 'false'
@@ -184,12 +187,12 @@ jobs:
           
           | Platform | Architecture | Download |
           |----------|-------------|----------|
-          | Linux | x86_64 | `tala-linux-amd64` |
-          | Linux | ARM64 | `tala-linux-arm64` |
-          | Windows | x86_64 | `tala-windows-amd64.exe` |
-          | Windows | ARM64 | `tala-windows-arm64.exe` |
-          | macOS | Intel | `tala-macos-amd64` |
-          | macOS | Apple Silicon | `tala-macos-arm64` |
+          | Linux | x86_64 | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64` |
+          | Linux | ARM64 | `tala-${{ steps.release-type.outputs.tag_name }}-linux-arm64` |
+          | Windows | x86_64 | `tala-${{ steps.release-type.outputs.tag_name }}-windows-amd64.exe` |
+          | Windows | ARM64 | `tala-${{ steps.release-type.outputs.tag_name }}-windows-arm64.exe` |
+          | macOS | Intel | `tala-${{ steps.release-type.outputs.tag_name }}-macos-amd64` |
+          | macOS | Apple Silicon | `tala-${{ steps.release-type.outputs.tag_name }}-macos-arm64` |
           
           ### Installation
           
@@ -233,12 +236,12 @@ jobs:
           
           ${{ steps.release-type.outputs.is_prerelease == 'true' && '**Note**: This is a pre-release version and may contain bugs. Use for testing purposes only.' || 'For support and documentation, visit the [repository](https://github.com/domykasas/tala).' }}
         files: |
-          build/tala-linux-amd64
-          build/tala-linux-arm64
-          build/tala-windows-amd64.exe
-          build/tala-windows-arm64.exe
-          build/tala-macos-amd64
-          build/tala-macos-arm64
+          build/tala-*-linux-amd64
+          build/tala-*-linux-arm64
+          build/tala-*-windows-amd64.exe
+          build/tala-*-windows-arm64.exe
+          build/tala-*-macos-amd64
+          build/tala-*-macos-arm64
           build/checksums.txt
         draft: false
         prerelease: ${{ steps.release-type.outputs.is_prerelease }}
