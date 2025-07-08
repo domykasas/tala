@@ -119,14 +119,22 @@ jobs:
           echo "No changelog entry found for version $VERSION_WITHOUT_V" > changelog_section.txt
         fi
 
-    - name: Build binaries
+    - name: Install packaging tools
+      if: steps.release-type.outputs.manual_dispatch == 'false'
+      run: |
+        # Install packaging tools
+        sudo apt-get update
+        sudo apt-get install -y alien rpm snapcraft-parsers genisoimage imagemagick zip
+
+    - name: Build binaries and packages
       if: steps.release-type.outputs.manual_dispatch == 'false'
       run: |
         # Create build directory
-        mkdir -p build
+        mkdir -p build dist pkg
         
-        # Extract version for filename
+        # Extract version for filename (remove 'v' prefix for some packages)
         VERSION=${{ steps.release-type.outputs.tag_name }}
+        VERSION_NO_V=${VERSION#v}
         
         # Build for different platforms with version in filename
         echo "Building for Linux (amd64)..."
@@ -135,8 +143,11 @@ jobs:
         echo "Building for Linux (arm64)..."
         GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-linux-arm64 .
         
+        echo "Building for FreeBSD (amd64)..."
+        GOOS=freebsd GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-freebsd-x64 .
+        
         echo "Building for Windows (amd64)..."
-        GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-windows-amd64.exe .
+        GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-windows-x64.exe .
         
         echo "Building for Windows (arm64)..."
         GOOS=windows GOARCH=arm64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-windows-arm64.exe .
@@ -146,6 +157,155 @@ jobs:
         
         echo "Building for macOS (arm64)..."
         GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-macos-arm64 .
+
+    - name: Create Linux packages
+      if: steps.release-type.outputs.manual_dispatch == 'false'
+      run: |
+        VERSION=${{ steps.release-type.outputs.tag_name }}
+        VERSION_NO_V=${VERSION#v}
+        
+        # Create tar.xz archive for Linux
+        echo "Creating tar.xz archive..."
+        mkdir -p pkg/tala-$VERSION_NO_V
+        cp build/tala-$VERSION-linux-amd64 pkg/tala-$VERSION_NO_V/tala
+        cp README.md pkg/tala-$VERSION_NO_V/
+        cp CHANGELOG.md pkg/tala-$VERSION_NO_V/
+        tar -C pkg -cJf build/tala-$VERSION-linux-x64.tar.xz tala-$VERSION_NO_V
+        
+        # Create DEB package structure
+        echo "Creating DEB package..."
+        mkdir -p pkg/deb/usr/local/bin
+        mkdir -p pkg/deb/usr/share/doc/tala
+        mkdir -p pkg/deb/DEBIAN
+        
+        cp build/tala-$VERSION-linux-amd64 pkg/deb/usr/local/bin/tala
+        chmod +x pkg/deb/usr/local/bin/tala
+        cp README.md CHANGELOG.md pkg/deb/usr/share/doc/tala/
+        
+        # Create control file
+        cat > pkg/deb/DEBIAN/control << EOF
+        Package: tala
+        Version: $VERSION_NO_V
+        Section: utils
+        Priority: optional
+        Architecture: amd64
+        Maintainer: Tala Team <noreply@github.com>
+        Description: Terminal AI Language Assistant
+         Tala is a terminal-based AI language assistant built with Go and Bubble Tea.
+         It provides an interactive interface for communicating with various AI providers.
+        EOF
+        
+        dpkg-deb --build pkg/deb build/tala-$VERSION-linux-amd64.deb
+        
+        # Convert DEB to RPM
+        echo "Creating RPM package..."
+        cd build
+        alien -r -c tala-$VERSION-linux-amd64.deb
+        mv tala-*.rpm tala-$VERSION-linux-x86_64.rpm
+        cd ..
+
+    - name: Create Windows packages
+      if: steps.release-type.outputs.manual_dispatch == 'false'
+      run: |
+        VERSION=${{ steps.release-type.outputs.tag_name }}
+        
+        # Create Windows installer (simple zip for now)
+        echo "Creating Windows packages..."
+        mkdir -p pkg/windows
+        cp build/tala-$VERSION-windows-x64.exe pkg/windows/
+        cp README.md CHANGELOG.md pkg/windows/
+        
+        # Create Squirrel.Windows compatible zip
+        cd pkg/windows
+        zip -r ../../build/tala-$VERSION-squirrel.zip .
+        cd ../..
+        
+        # Create blockmap for exe
+        echo "Creating blockmaps..."
+        sha256sum build/tala-$VERSION-windows-x64.exe > build/tala-$VERSION-windows-x64.exe.blockmap
+        sha256sum build/tala-$VERSION-squirrel.zip > build/tala-$VERSION-squirrel.zip.blockmap
+
+    - name: Create macOS packages
+      if: steps.release-type.outputs.manual_dispatch == 'false'
+      run: |
+        VERSION=${{ steps.release-type.outputs.tag_name }}
+        
+        # Create macOS app bundle structure
+        echo "Creating macOS DMG..."
+        mkdir -p pkg/macos/Tala.app/Contents/MacOS
+        mkdir -p pkg/macos/Tala.app/Contents/Resources
+        
+        # Create Info.plist
+        cat > pkg/macos/Tala.app/Contents/Info.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleExecutable</key>
+            <string>tala</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.github.domykasas.tala</string>
+            <key>CFBundleName</key>
+            <string>Tala</string>
+            <key>CFBundleVersion</key>
+            <string>$VERSION</string>
+            <key>CFBundleShortVersionString</key>
+            <string>$VERSION</string>
+        </dict>
+        </plist>
+        EOF
+        
+        # Copy universal binary (using amd64 for now)
+        cp build/tala-$VERSION-macos-amd64 pkg/macos/Tala.app/Contents/MacOS/tala
+        chmod +x pkg/macos/Tala.app/Contents/MacOS/tala
+        
+        # Create DMG using genisoimage (hdiutil alternative for Linux)
+        genisoimage -V "Tala" -D -R -apple -no-pad -o build/tala-$VERSION-macos.dmg pkg/macos
+        
+        # Create blockmap for DMG
+        sha256sum build/tala-$VERSION-macos.dmg > build/tala-$VERSION-macos.dmg.blockmap
+
+    - name: Create AppImage
+      if: steps.release-type.outputs.manual_dispatch == 'false'
+      run: |
+        VERSION=${{ steps.release-type.outputs.tag_name }}
+        
+        echo "Creating AppImage..."
+        # Download AppImageTool
+        wget -O appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+        chmod +x appimagetool
+        
+        # Create AppDir structure
+        mkdir -p pkg/appdir/usr/bin
+        mkdir -p pkg/appdir/usr/share/applications
+        mkdir -p pkg/appdir/usr/share/icons/hicolor/256x256/apps
+        
+        # Copy binary
+        cp build/tala-$VERSION-linux-amd64 pkg/appdir/usr/bin/tala
+        chmod +x pkg/appdir/usr/bin/tala
+        
+        # Create desktop file
+        cat > pkg/appdir/usr/share/applications/tala.desktop << EOF
+        [Desktop Entry]
+        Type=Application
+        Name=Tala
+        Comment=Terminal AI Language Assistant
+        Exec=tala
+        Icon=tala
+        Categories=Utility;
+        Terminal=true
+        EOF
+        
+        # Create simple icon (placeholder)
+        echo "Creating placeholder icon..."
+        convert -size 256x256 xc:blue -gravity center -pointsize 72 -fill white -annotate +0+0 "T" pkg/appdir/usr/share/icons/hicolor/256x256/apps/tala.png || echo "Warning: ImageMagick not available, skipping icon"
+        
+        # Copy desktop file to AppDir root
+        cp pkg/appdir/usr/share/applications/tala.desktop pkg/appdir/
+        cp pkg/appdir/usr/share/icons/hicolor/256x256/apps/tala.png pkg/appdir/ 2>/dev/null || touch pkg/appdir/tala.png
+        
+        # Create AppImage
+        ./appimagetool pkg/appdir build/tala-$VERSION-linux-x86_64.AppImage
 
     - name: Create checksums
       if: steps.release-type.outputs.manual_dispatch == 'false'
@@ -183,16 +343,36 @@ jobs:
           
           ### Downloads
           
-          Choose the appropriate binary for your platform:
+          Choose the appropriate package for your platform:
           
-          | Platform | Architecture | Download |
-          |----------|-------------|----------|
-          | Linux | x86_64 | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64` |
-          | Linux | ARM64 | `tala-${{ steps.release-type.outputs.tag_name }}-linux-arm64` |
-          | Windows | x86_64 | `tala-${{ steps.release-type.outputs.tag_name }}-windows-amd64.exe` |
-          | Windows | ARM64 | `tala-${{ steps.release-type.outputs.tag_name }}-windows-arm64.exe` |
-          | macOS | Intel | `tala-${{ steps.release-type.outputs.tag_name }}-macos-amd64` |
-          | macOS | Apple Silicon | `tala-${{ steps.release-type.outputs.tag_name }}-macos-arm64` |
+          #### Linux
+          | Format | Description | Download |
+          |--------|-------------|----------|
+          | Binary | Standalone executable | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64` |
+          | DEB | Debian/Ubuntu package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64.deb` |
+          | RPM | Red Hat/Fedora package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-x86_64.rpm` |
+          | AppImage | Universal Linux package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-x86_64.AppImage` |
+          | Archive | Compressed archive | `tala-${{ steps.release-type.outputs.tag_name }}-linux-x64.tar.xz` |
+          | ARM64 | ARM64 binary | `tala-${{ steps.release-type.outputs.tag_name }}-linux-arm64` |
+          
+          #### Windows
+          | Format | Description | Download |
+          |--------|-------------|----------|
+          | Executable | Windows installer | `tala-${{ steps.release-type.outputs.tag_name }}-windows-x64.exe` |
+          | Squirrel | Auto-updater package | `tala-${{ steps.release-type.outputs.tag_name }}-squirrel.zip` |
+          | ARM64 | ARM64 executable | `tala-${{ steps.release-type.outputs.tag_name }}-windows-arm64.exe` |
+          
+          #### macOS
+          | Format | Description | Download |
+          |--------|-------------|----------|
+          | DMG | macOS disk image | `tala-${{ steps.release-type.outputs.tag_name }}-macos.dmg` |
+          | Intel | Intel binary | `tala-${{ steps.release-type.outputs.tag_name }}-macos-amd64` |
+          | Apple Silicon | ARM64 binary | `tala-${{ steps.release-type.outputs.tag_name }}-macos-arm64` |
+          
+          #### FreeBSD
+          | Format | Description | Download |
+          |--------|-------------|----------|
+          | Binary | FreeBSD executable | `tala-${{ steps.release-type.outputs.tag_name }}-freebsd-x64` |
           
           ### Installation
           
@@ -238,10 +418,20 @@ jobs:
         files: |
           build/tala-*-linux-amd64
           build/tala-*-linux-arm64
-          build/tala-*-windows-amd64.exe
+          build/tala-*-linux-amd64.deb
+          build/tala-*-linux-x86_64.rpm
+          build/tala-*-linux-x64.tar.xz
+          build/tala-*-linux-x86_64.AppImage
+          build/tala-*-freebsd-x64
+          build/tala-*-windows-x64.exe
+          build/tala-*-windows-x64.exe.blockmap
           build/tala-*-windows-arm64.exe
+          build/tala-*-squirrel.zip
+          build/tala-*-squirrel.zip.blockmap
           build/tala-*-macos-amd64
           build/tala-*-macos-arm64
+          build/tala-*-macos.dmg
+          build/tala-*-macos.dmg.blockmap
           build/checksums.txt
         draft: false
         prerelease: ${{ steps.release-type.outputs.is_prerelease }}

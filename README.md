@@ -4,6 +4,8 @@
 ![Go](https://img.shields.io/badge/Go-1.24.4+-00ADD8.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+**📥 [Download Latest Release](https://github.com/domykasas/tala/releases/latest)**
+
 Tala is a terminal-based AI language assistant built with Go and Bubble Tea. It provides an interactive interface for communicating with various AI providers including OpenAI, Anthropic, and Ollama, with intelligent file operations and shell command execution capabilities.
 
 ## Features
