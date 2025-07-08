@@ -97,13 +97,10 @@ jobs:
         cat checksums.txt
 
     - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.last-pre-release-tag.outputs.new_pre_release_tag }}
-        release_name: Pre-release ${{ steps.last-pre-release-tag.outputs.new_pre_release_tag }}
+        name: Pre-release ${{ steps.last-pre-release-tag.outputs.new_pre_release_tag }}
         body: |
           ## Pre-release ${{ steps.last-pre-release-tag.outputs.new_pre_release_tag }}
           
@@ -123,75 +120,16 @@ jobs:
           3. Run: `./tala-*` (or `tala-*.exe` on Windows)
           
           **Note**: This is a pre-release version and may contain bugs. Use for testing purposes only.
+        files: |
+          build/tala-linux-amd64
+          build/tala-linux-arm64
+          build/tala-windows-amd64.exe
+          build/tala-windows-arm64.exe
+          build/tala-macos-amd64
+          build/tala-macos-arm64
+          build/checksums.txt
         draft: false
         prerelease: true
-
-    - name: Upload Linux amd64 binary
-      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/tala-linux-amd64
-        asset_name: tala-linux-amd64
-        asset_content_type: application/octet-stream
 
-    - name: Upload Linux arm64 binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/tala-linux-arm64
-        asset_name: tala-linux-arm64
-        asset_content_type: application/octet-stream
-
-    - name: Upload Windows amd64 binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/tala-windows-amd64.exe
-        asset_name: tala-windows-amd64.exe
-        asset_content_type: application/octet-stream
-
-    - name: Upload Windows arm64 binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/tala-windows-arm64.exe
-        asset_name: tala-windows-arm64.exe
-        asset_content_type: application/octet-stream
-
-    - name: Upload macOS amd64 binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/tala-macos-amd64
-        asset_name: tala-macos-amd64
-        asset_content_type: application/octet-stream
-
-    - name: Upload macOS arm64 binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/tala-macos-arm64
-        asset_name: tala-macos-arm64
-        asset_content_type: application/octet-stream
-
-    - name: Upload checksums
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/checksums.txt
-        asset_name: checksums.txt
-        asset_content_type: text/plain
