@@ -400,8 +400,21 @@ func TestChangeDirectory(t *testing.T) {
 					t.Errorf("Failed to get current directory: %v", err)
 				}
 				expectedDir, _ := filepath.Abs(tt.path)
-				if currentDir != expectedDir {
-					t.Errorf("Current directory = %v, want %v", currentDir, expectedDir)
+				
+				// Resolve symlinks to get canonical paths for comparison
+				currentDirResolved, err1 := filepath.EvalSymlinks(currentDir)
+				expectedDirResolved, err2 := filepath.EvalSymlinks(expectedDir)
+				
+				// Fall back to original paths if symlink resolution fails
+				if err1 != nil {
+					currentDirResolved = currentDir
+				}
+				if err2 != nil {
+					expectedDirResolved = expectedDir
+				}
+				
+				if currentDirResolved != expectedDirResolved {
+					t.Errorf("Current directory = %v, want %v", currentDirResolved, expectedDirResolved)
 				}
 			}
 		})
