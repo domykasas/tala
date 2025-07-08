@@ -65,7 +65,7 @@ func CreateFile(filename string, content string) *FileOperation {
 	}
 
 	// Create file with content
-	err := os.WriteFile(filename, []byte(content), 0644)
+	err := os.WriteFile(filename, []byte(content), 0600)
 	if err != nil {
 		return &FileOperation{
 			Success: false,
@@ -121,7 +121,7 @@ func UpdateFile(filename string, content string) *FileOperation {
 		}
 	}
 
-	err := os.WriteFile(filename, []byte(content), 0644)
+	err := os.WriteFile(filename, []byte(content), 0600)
 	if err != nil {
 		return &FileOperation{
 			Success: false,
@@ -177,7 +177,7 @@ func CreateDirectory(dirname string) *FileOperation {
 		}
 	}
 
-	err := os.MkdirAll(dirname, 0755)
+	err := os.MkdirAll(dirname, 0750)
 	if err != nil {
 		return &FileOperation{
 			Success: false,

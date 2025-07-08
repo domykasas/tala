@@ -338,7 +338,16 @@ func GetAvailableTools() []Tool {
 				var cmd *exec.Cmd
 				if runtime.GOOS == "windows" {
 					if filter != "" {
-						cmd = exec.Command("tasklist", "/FI", fmt.Sprintf("IMAGENAME eq *%s*", filter))
+						// Sanitize filter input to prevent command injection
+						sanitizedFilter := strings.ReplaceAll(filter, "*", "")
+						sanitizedFilter = strings.ReplaceAll(sanitizedFilter, "&", "")
+						sanitizedFilter = strings.ReplaceAll(sanitizedFilter, "|", "")
+						sanitizedFilter = strings.ReplaceAll(sanitizedFilter, ";", "")
+						if sanitizedFilter != "" {
+							cmd = exec.Command("tasklist", "/FI", fmt.Sprintf("IMAGENAME eq *%s*", sanitizedFilter))
+						} else {
+							cmd = exec.Command("tasklist")
+						}
 					} else {
 						cmd = exec.Command("tasklist")
 					}
@@ -516,7 +525,9 @@ func ExecuteShellCommand(command string, timeout time.Duration) string {
 	select {
 	case <-time.After(timeout):
 		if cmd.Process != nil {
-			cmd.Process.Kill()
+			if err := cmd.Process.Kill(); err != nil {
+				// Log error but continue - process might already be dead
+			}
 		}
 		return fmt.Sprintf("Command timed out after %v", timeout)
 	case execErr := <-done:

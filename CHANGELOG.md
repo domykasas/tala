@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8] - 2025-07-08
+
+### Security
+- **Enhanced file permissions**: Fixed gosec security issues
+  - Changed file permissions from 0644 to 0600 (user read/write only)
+  - Changed directory permissions from 0755 to 0750 (more restrictive)
+  - Added input sanitization for process filtering to prevent command injection
+  - Fixed unhandled error in process kill operation
+- **Improved security posture**: All gosec high/medium severity issues resolved
+
+### Fixed
+- **Command injection prevention**: Sanitized filter input in process listing
+- **File security**: More restrictive permissions for config and data files
+- **Error handling**: Proper error handling for system operations
+
 ## [0.0.7] - 2025-07-08
 
 ### Fixed

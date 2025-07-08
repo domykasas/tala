@@ -56,12 +56,20 @@ This document outlines the planned development roadmap for Tala - Terminal AI La
 - [x] Removed unused utility functions
 - [x] Optimized string operations
 
-## Version 0.0.7 - Test Fixes ✅ (Current)
+## Version 0.0.7 - Test Fixes ✅ (Released)
 
 - [x] Fixed failing test in config/config_test.go
 - [x] Updated test expectations to match configuration changes
 - [x] Improved CI/CD reliability with passing tests
 - [x] Enhanced automated testing pipeline stability
+
+## Version 0.0.8 - Security Enhancements ✅ (Current)
+
+- [x] Enhanced file permissions (0600 for files, 0750 for directories)
+- [x] Fixed gosec security scanner issues
+- [x] Added input sanitization for command injection prevention
+- [x] Improved error handling for system operations
+- [x] Resolved all high/medium severity security issues
 
 ## Version 0.1.0 - Enhanced AI Provider Support
 

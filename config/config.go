@@ -60,7 +60,7 @@ func (c *Config) Save() error {
 	}
 
 	configDir := filepath.Dir(configPath)
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0750); err != nil {
 		return err
 	}
 
@@ -69,7 +69,7 @@ func (c *Config) Save() error {
 		return err
 	}
 
-	return os.WriteFile(configPath, data, 0644)
+	return os.WriteFile(configPath, data, 0600)
 }
 
 var getConfigPath = func() (string, error) {
