@@ -48,13 +48,20 @@ This document outlines the planned development roadmap for Tala - Terminal AI La
 - [x] Replaced deprecated linting tools
 - [x] Enhanced workflow reliability and tool compatibility
 
-## Version 0.0.6 - Code Quality ✅ (Current)
+## Version 0.0.6 - Code Quality ✅ (Released)
 
 - [x] Fixed staticcheck linting errors across codebase
 - [x] Improved code consistency and maintainability
 - [x] Enhanced error message formatting
 - [x] Removed unused utility functions
 - [x] Optimized string operations
+
+## Version 0.0.7 - Test Fixes ✅ (Current)
+
+- [x] Fixed failing test in config/config_test.go
+- [x] Updated test expectations to match configuration changes
+- [x] Improved CI/CD reliability with passing tests
+- [x] Enhanced automated testing pipeline stability
 
 ## Version 0.1.0 - Enhanced AI Provider Support
 

@@ -20,8 +20,8 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("Expected temperature 0.7, got %f", cfg.Temperature)
 	}
 	
-	if cfg.MaxTokens != 1000 {
-		t.Errorf("Expected max tokens 1000, got %d", cfg.MaxTokens)
+	if cfg.MaxTokens != 0 {
+		t.Errorf("Expected max tokens 0, got %d", cfg.MaxTokens)
 	}
 }
 

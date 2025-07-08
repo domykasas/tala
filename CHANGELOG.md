@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7] - 2025-07-08
+
+### Fixed
+- **Tests**: Fixed failing test in config/config_test.go
+  - Updated test expectation for MaxTokens from 1000 to 0 (unlimited)
+  - Aligned test with configuration changes from version 0.0.3
+
+### Technical
+- **Test coverage**: All tests now pass successfully
+- **CI/CD reliability**: Improved automated testing pipeline stability
+
 ## [0.0.6] - 2025-07-08
 
 ### Fixed
