@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5] - 2025-07-08
+
+### Fixed
+- **CI/CD workflows**: Fixed import paths and tool configurations
+  - Corrected Gosec import path from `securecodewarrior/gosec` to `securego/gosec`
+  - Replaced deprecated golint with staticcheck for better linting
+  - Simplified security workflow to remove duplicate vulnerability checks
+  - Enhanced workflow reliability and tool compatibility
+
+### Enhanced
+- **Code quality tools**: Updated to use maintained and supported linters
+- **Security scanning**: Improved security workflow with correct tool paths
+
 ## [0.0.4] - 2025-07-08
 
 ### Added
