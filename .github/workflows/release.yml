@@ -323,8 +323,11 @@ jobs:
         # Update snapcraft.yaml with current version
         sed -i "s/version: git/version: ${VERSION#v}/" snapcraft.yaml
         
+        # Ensure the binary exists in build directory for dump plugin
+        ls -la build/
+        
         # Build snap with destructive mode to avoid LXD issues in CI
-        snapcraft --destructive-mode
+        snapcraft --destructive-mode --verbose
         
         # Rename snap to include version
         if ls *.snap 1> /dev/null 2>&1; then
