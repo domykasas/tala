@@ -48,9 +48,16 @@ jobs:
           echo "No pre-release tags found. Creating a new one: $new_pre_release_tag"
         else
           echo "Last pre-release tag: $last_pre_release_tag"
-          # Extract RC number and increment
-          version_part=${last_pre_release_tag%-rc.*}
-          rc_part=${last_pre_release_tag##*-rc.}
+          # Extract RC number and increment (standardize to -rc.X format)
+          if [[ "$last_pre_release_tag" == *"-rc."* ]]; then
+            # Already in -rc.X format
+            version_part=${last_pre_release_tag%-rc.*}
+            rc_part=${last_pre_release_tag##*-rc.}
+          else
+            # Convert from -rcX to -rc.X format
+            version_part=${last_pre_release_tag%-rc*}
+            rc_part=${last_pre_release_tag##*-rc}
+          fi
           incremented_rc_number=$((rc_part + 1))
           new_pre_release_tag="$version_part-rc.$incremented_rc_number"
         fi

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-07-08
+
+### Enhanced
+- **Release Workflows**: Improved dual-workflow architecture for release management
+  - Standardized pre-release format to use `-rc.X` (with dot) for consistency
+  - Enhanced pre-release workflow to handle both `-rc` and `-rc.` formats automatically
+  - Added comprehensive documentation for release process in CLAUDE.md
+- **Documentation**: Enhanced CLAUDE.md with detailed workflow explanations
+  - Added manual release process instructions
+  - Documented preferred RC tag format and tagging reminders
+  - Improved architecture benefits and development workflow documentation
+
+### Fixed
+- **Version Management**: Updated README.md version badge to reflect current version
+- **Workflow Logic**: Pre-release workflow now properly converts between RC formats
+
 ## [0.0.9] - 2025-07-08
 
 ### Fixed

@@ -56,7 +56,8 @@ go build -o tala
 **pre-release.yml** (Automatic Pre-releases):
 - **Trigger**: Merged PRs to main branch
 - **Purpose**: Continuous testing and validation - provides immediate testing releases
-- **Version Pattern**: Auto-increments RC numbers (v0.1.0-rc.1, v0.1.0-rc.2, etc.)
+- **Version Pattern**: Auto-increments RC numbers using dot format (v0.1.0-rc.1, v0.1.0-rc.2, etc.)
+- **Preferred Format**: Always use `-rc.X` (with dot) instead of `-rcX` for consistency
 - **Benefit**: Stakeholders can test features immediately after merge without manual intervention
 
 **release.yml** (Manual Releases):
@@ -72,8 +73,13 @@ go build -o tala
 ```
 Development → PR → Merge → pre-release.yml → v0.1.0-rc.1 (automatic)
                                           → v0.1.0-rc.2 (automatic)
-Ready for release → Push tag → release.yml → v0.1.0 (manual)
+Ready for release → Create tag → Push tag → release.yml → v0.1.0 (manual)
 ```
+
+**Manual Release Process**:
+1. Create tag: `git tag v0.1.1-rc.1` (use `-rc.X` format for pre-releases)
+2. Push tag: `git push origin v0.1.1-rc.1`
+3. GitHub Actions will automatically build and create the release
 
 **Architecture Benefits**:
 - ✅ Automatic testing releases for immediate feedback
