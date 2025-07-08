@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.9] - 2025-07-08
+
+### Fixed
+- **Cross-platform testing**: Fixed path resolution test failure on macOS
+  - Added symlink resolution for directory comparison in tests
+  - Improved cross-platform compatibility for path operations
+  - Ensures tests pass consistently across macOS, Linux, and Windows
+
+### Technical
+- **Test reliability**: Enhanced test robustness for different filesystem configurations
+- **Path handling**: Better handling of symbolic links in test environments
+
 ## [0.0.8] - 2025-07-08
 
 ### Security

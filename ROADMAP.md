@@ -63,13 +63,20 @@ This document outlines the planned development roadmap for Tala - Terminal AI La
 - [x] Improved CI/CD reliability with passing tests
 - [x] Enhanced automated testing pipeline stability
 
-## Version 0.0.8 - Security Enhancements ✅ (Current)
+## Version 0.0.8 - Security Enhancements ✅ (Released)
 
 - [x] Enhanced file permissions (0600 for files, 0750 for directories)
 - [x] Fixed gosec security scanner issues
 - [x] Added input sanitization for command injection prevention
 - [x] Improved error handling for system operations
 - [x] Resolved all high/medium severity security issues
+
+## Version 0.0.9 - Cross-Platform Testing ✅ (Current)
+
+- [x] Fixed path resolution test failure on macOS
+- [x] Added symlink resolution for directory comparison in tests
+- [x] Improved cross-platform compatibility for path operations
+- [x] Enhanced test robustness for different filesystem configurations
 
 ## Version 0.1.0 - Enhanced AI Provider Support
 
