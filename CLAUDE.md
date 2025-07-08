@@ -1,6 +1,8 @@
-# CLAUDE.md - Tala Development Guide
+# CLAUDE.md
 
-This file contains development information and configuration specific to Tala (Terminal AI Language Assistant).
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+Tala is a terminal-based AI language assistant built with Go and Bubble Tea. It provides an interactive interface for communicating with various AI providers including OpenAI, Anthropic, and Ollama.
 
 ## Development Commands
 
@@ -13,6 +15,8 @@ go test ./...
 ```bash
 go build -o tala
 ```
+
+**Note**: When helping with Tala development, do not build the application or delete the `tala` binary file. The user will build it themselves.
 
 ### Dependencies
 ```bash
@@ -35,7 +39,14 @@ tala/
 │   └── config_test.go   # Configuration tests
 ├── ai/                  # AI provider implementations
 │   ├── provider.go      # Provider interface and implementations
-│   └── provider_test.go # Provider tests
+│   ├── provider_test.go # Provider tests
+│   ├── tools.go         # File operation tools for AI
+│   └── tools_test.go    # AI tools tests
+├── fileops/             # File system operations
+│   ├── fileops.go       # File and directory CRUD operations
+│   ├── commands.go      # Command parsing and execution
+│   ├── fileops_test.go  # File operations tests
+│   └── commands_test.go # Command tests
 ├── tui/                 # Terminal UI components
 │   └── model.go         # Bubble Tea model implementation
 ├── go.mod              # Go module file
@@ -64,108 +75,89 @@ The application validates:
 - Provider name (must be supported: ollama, openai, anthropic)
 - Model name (must be specified)
 
-## Architecture Decisions
+## Architecture Overview
 
-### Why Tala?
-**Tala** means "to speak" or "language" in several languages, reflecting our focus on AI language assistance in the terminal.
+### Core Components
+- **main.go**: Entry point that initializes config and starts the TUI
+- **config/**: Configuration management with JSON file at `~/.config/tala/config.json`
+- **ai/**: Provider interface pattern supporting OpenAI, Anthropic, and Ollama
+- **tui/**: Bubble Tea-based terminal interface with no alt-screen mode for copy-paste functionality
 
-### Why No Alt-Screen Mode?
-- Enables native terminal copy-paste functionality
-- Users can scroll back through conversation history
-- Works with all terminal features (search, selection, etc.)
-- More natural terminal experience
+### Provider System
+The `ai.Provider` interface allows pluggable AI providers:
+- `OpenAIProvider`: OpenAI API integration (GPT models)
+- `AnthropicProvider`: Anthropic API integration (Claude models)  
+- `OllamaProvider`: Local Ollama integration with HTTP API calls
 
-### Why Ollama as Default?
-- Local-first approach for privacy
-- No API key required for immediate use
-- Fast responses for development tasks
-- Supports many popular models
+### Configuration Flow
+1. Load config from `~/.config/tala/config.json` or create default
+2. Validate provider requirements (API keys for OpenAI/Anthropic, not needed for Ollama)
+3. Create provider instance based on config
+4. Initialize TUI with provider and config
 
-### Why Bubble Tea?
-- Excellent TUI framework for Go
-- Good documentation and community
-- Handles terminal complexity well
-- Supports concurrent operations
+### Enhanced Operations System
+Tala includes comprehensive operations capabilities:
 
-### Provider Interface Pattern
-- Allows easy addition of new AI providers
-- Enables testing with mock providers
-- Provides consistent API across providers
-- Supports provider-specific configuration
+**1. Direct Commands (User-initiated)**
+- **Command Detection**: Input starting with `/` triggers file operations instead of AI chat
+- **Operation Types**: Create, read, update, delete files and directories, plus navigation (ls, cd, pwd)
+- **Safety**: Operations are restricted to current working directory and subdirectories
+- **Feedback**: Color-coded responses (green for success, red for errors)
 
-## Development Guidelines
+**2. AI-Integrated Tools (AI-initiated)**
+- **Intent Detection**: AI-powered natural language understanding of user requests
+- **File Operations**: Create, read, update, delete files and directories
+- **Shell Commands**: Execute safe shell/bash commands with security restrictions
+- **System Information**: Get system details, process lists, working directory
+- **Security**: Comprehensive command filtering and timeout protection
 
-### Code Style
-- Follow Go naming conventions
-- Use meaningful variable and function names
-- Add comments for exported functions
-- Keep functions focused and small
-- Use `gofmt` for formatting
+## Key Implementation Details
 
-### Testing Strategy
-- Write tests for all new functionality
-- Use table-driven tests where appropriate
-- Mock external dependencies (HTTP calls)
-- Maintain test coverage above 80%
-- Test error conditions and edge cases
+### TUI Model Structure
+The `tui.Model` struct manages application state:
+- `input`: Current user input string
+- `loading`: Boolean for request state
+- `provider`: AI provider instance
+- `config`: Configuration reference
+- Statistics tracking (tokens, requests, timing)
 
-### Error Handling
-- Use Go's idiomatic error handling
-- Provide meaningful error messages
-- Handle network timeouts gracefully
-- Fail fast for configuration errors
-- Log errors appropriately (without exposing secrets)
+### Message Flow
+1. User types input and presses Enter
+2. Input displayed with "You:" prefix
+3. **Branch A - File Operations** (if input starts with `/`):
+   - Parse command and arguments
+   - Execute file operation via `fileops.ExecuteCommand()`
+   - Display result with "System:" prefix (green/red based on success)
+4. **Branch B - AI Chat** (normal input):
+   - Loading state shows with elapsed time
+   - Provider generates response via `GenerateResponse()`
+   - Response displayed with "AI:" prefix and stats
+   - Statistics updated for session totals
 
-### Dependencies
-- Minimize external dependencies
-- Use well-maintained libraries
-- Pin dependency versions in go.mod
-- Regularly update dependencies for security
-- Document any breaking changes
+### Provider Interface Requirements
+All providers must implement:
+```go
+type Provider interface {
+    GenerateResponse(ctx context.Context, prompt string) (string, error)
+    GenerateResponseWithTools(ctx context.Context, prompt string) (string, []ToolResult, error)
+    GetName() string
+    SupportsTools() bool
+}
+```
 
-## Security Considerations
+### AI Tool System
+- **Intent Detection**: `IntentDetector` class uses AI to understand user requests
+- **Tool Interface**: Standardized tool execution via `ExecuteTool()` function
+- **Available Tools**: File operations, shell commands, system information, process management
+- **Security**: Command filtering, timeout protection, output size limits
+- **Provider Integration**: All providers support tool calling through enhanced interface
+- **Fallback System**: Pattern matching fallback when AI intent detection fails
 
-### API Key Handling
-- Store API keys in user config directory only
-- Set appropriate file permissions (0644)
-- Never log API keys or include in error messages
-- Consider encryption for future versions
-- Support environment variable overrides
-
-### Input Validation
-- Validate all user inputs
-- Sanitize data before sending to providers
-- Handle malformed responses gracefully
-- Prevent injection attacks
-- Limit input sizes appropriately
-
-### Network Security
-- Use HTTPS for all external API calls
-- Implement request timeouts
-- Handle TLS certificate validation
-- Consider rate limiting for abuse prevention
-
-## Performance Considerations
-
-### Memory Usage
-- Stream large responses when possible
-- Limit conversation history in memory
-- Clean up unused resources promptly
-- Consider garbage collection impact
-- Monitor memory usage in long sessions
-
-### Network Operations
-- Implement proper timeouts (30s default)
-- Handle network errors gracefully
-- Consider request retry logic
-- Cache responses when appropriate
-- Minimize request overhead
-
-### Startup Performance
-- Lazy load configurations
-- Minimize startup dependencies
-- Fast config validation
-- Quick error reporting
+### Configuration Management
+- Auto-creates config file with defaults if missing
+- Validates provider-specific requirements
+- Uses JSON marshaling for persistence
+- File permissions set to 0644 for security
 
 ## Troubleshooting Guide
 
@@ -213,87 +205,85 @@ go test ./... -cover
 go test ./ai -run TestOllamaProvider
 ```
 
-## Release Process
+## Adding New Providers
 
-### Version Numbering
-Following [Semantic Versioning](https://semver.org/):
-- `MAJOR.MINOR.PATCH`
-- Current: `0.0.1` (initial release)
+To add a new AI provider:
 
-### Release Checklist
-1. Update version in relevant files
-2. Update CHANGELOG.md following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-3. Run full test suite: `go test ./...`
-4. Test with all supported providers
-5. Update documentation if needed
-6. Create git tag: `git tag v0.0.1`
-7. Build release binaries
-8. Create GitHub release with notes
+1. **Create Provider Struct**: Define struct with required fields (API key, model, etc.)
+2. **Implement Interface**: Add `GenerateResponse()` and `GetName()` methods
+3. **Update Factory**: Add case to `CreateProvider()` function in `ai/provider.go`
+4. **Add Tests**: Create test file with provider-specific test cases
+5. **Update Config**: Add provider to validation in `config/config.go`
 
-### Build for Multiple Platforms
-```bash
-# Linux
-GOOS=linux GOARCH=amd64 go build -o tala-linux-amd64
+### Provider Implementation Template
+```go
+type NewProvider struct {
+    APIKey      string
+    Model       string
+    Temperature float64
+    MaxTokens   int
+}
 
-# macOS
-GOOS=darwin GOARCH=amd64 go build -o tala-darwin-amd64
+func (p *NewProvider) GenerateResponse(ctx context.Context, prompt string) (string, error) {
+    // Implement API call logic
+}
 
-# Windows
-GOOS=windows GOARCH=amd64 go build -o tala-windows-amd64.exe
+func (p *NewProvider) GetName() string {
+    return "NewProvider"
+}
 ```
 
-## Contributing Guidelines
+## Testing Strategy
 
-### Before Contributing
-1. Read this development guide
-2. Check existing issues and roadmap
-3. Run tests locally: `go test ./...`
-4. Follow coding standards
-5. Update documentation as needed
+### Unit Tests
+- Mock HTTP clients for provider tests
+- Test configuration loading and validation
+- Test TUI state transitions
+- Use table-driven tests for multiple scenarios
 
-### Pull Request Process
-1. Create feature branch from main
-2. Write tests for new functionality
-3. Ensure all tests pass
-4. Update relevant documentation
-5. Submit PR with clear description
-6. Address review feedback promptly
+### Integration Tests
+- Test with actual Ollama instance when available
+- Validate end-to-end message flow
+- Test error handling and recovery
 
-### Code Review Criteria
-- **Functionality**: Does it work as intended?
-- **Tests**: Are there adequate tests?
-- **Security**: Any security implications?
-- **Performance**: Impact on performance?
-- **Documentation**: Is documentation updated?
-- **Style**: Follows Go conventions?
+### Test Coverage
+Current coverage focuses on:
+- Configuration management (`config/config_test.go`)
+- Provider implementations (`ai/provider_test.go`)
+- AI tool system (`ai/tools_test.go`)
+- File operations (`fileops/fileops_test.go`)
+- Command parsing (`fileops/commands_test.go`)
+- Run `go test ./... -cover` to check coverage
 
-## Future Development
+### Available File Commands
 
-### Provider Integration Roadmap
-- Google Gemini API integration
-- Cohere model support
-- Hugging Face Inference API
-- Local llama.cpp integration
-- Streaming response support
+**Direct Commands (prefix with `/`)**
+```
+/help               - Show all available commands
+/ls [path]          - List files and directories
+/cat <file>         - Display file content
+/create <file> [content] - Create new file with optional content
+/write <file> <content>  - Write content to file (create or overwrite)
+/update <file> <content> - Update existing file content
+/rm <file>          - Remove file
+/mkdir <dir>        - Create directory
+/rmdir <dir>        - Remove directory (and contents)
+/cp <src> <dst>     - Copy file
+/mv <src> <dst>     - Move/rename file
+/pwd                - Show current directory
+/cd <path>          - Change directory
+```
 
-### UI/UX Improvements
-- Syntax highlighting for code blocks
-- Better message formatting
-- Custom themes and colors
-- Configurable prompt templates
-
-### Advanced Features
-- Session persistence
-- Conversation export
-- File upload and analysis
-- Git integration
-- Plugin system
-
-### Performance Optimizations
-- Response caching
-- Concurrent request handling
-- Memory usage optimization
-- Startup time improvements
+**AI Natural Language Examples**
+```
+"create a file called hello.txt with Hello World content"
+"list all files in the current directory"
+"show me what's in the config.json file"
+"make a new folder called projects"
+"what is my current working directory?"
+"delete the old_file.txt"
+"copy main.go to backup.go"
+```
 
 ---
 

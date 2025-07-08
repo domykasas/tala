@@ -1,14 +1,20 @@
 # Tala - Terminal AI Language Assistant
 
-![Version](https://img.shields.io/badge/version-0.0.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.0.2-blue.svg)
 ![Go](https://img.shields.io/badge/Go-1.24.4+-00ADD8.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-Tala is a terminal-based AI language assistant built with Go and Bubble Tea. It provides an interactive interface for communicating with various AI providers including OpenAI, Anthropic, and Ollama, with a focus on simplicity and copy-paste functionality.
+Tala is a terminal-based AI language assistant built with Go and Bubble Tea. It provides an interactive interface for communicating with various AI providers including OpenAI, Anthropic, and Ollama, with intelligent file operations and shell command execution capabilities.
 
 ## Features
 
 - **Multiple AI Providers**: Support for OpenAI, Anthropic Claude, and Ollama
+- **AI-Integrated File Operations**: Natural language file and directory management
+  - Create, read, update, delete files with simple commands
+  - "Create test.txt with hello world" - and it actually creates the file!
+- **Secure Shell Command Execution**: Run bash/shell commands safely
+  - Built-in security filtering and timeout protection
+  - Cross-platform support (Windows, Linux, macOS)
 - **Copy-Paste Friendly**: No alt-screen mode - use your terminal's native copy/paste
 - **Real-Time Stats**: Live response times, token counts, and session statistics
 - **Local-First**: Defaults to Ollama with deepseek-r1 (no API key required)
@@ -25,7 +31,7 @@ Tala is a terminal-based AI language assistant built with Go and Bubble Tea. It 
 ### Installation
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/domykasas/tala
 cd tala
 go mod tidy
 go build -o tala
@@ -92,6 +98,30 @@ To use OpenAI or Anthropic, edit your config file:
 - **Ctrl+L**: Clear screen and reset session stats
 - **Backspace**: Delete characters from input
 
+### File Operations
+
+Tala understands natural language for file operations:
+
+```
+You: Create a file called notes.txt with "Hello World" in it
+AI: ✓ Created file 'notes.txt'
+
+You: List files in current directory  
+AI: ✓ Listed directory contents
+
+You: Run ls command
+AI: ✓ Executed shell command successfully
+```
+
+### Direct Commands
+
+You can also use direct slash commands:
+
+- `/help` - Show available commands and file operations
+- `/create <filename> <content>` - Create files directly
+- `/ls` - List directory contents
+- `/pwd` - Show current directory
+
 ### Copy and Paste
 
 Tala is designed to work seamlessly with your terminal's copy-paste functionality:
@@ -127,7 +157,13 @@ tala/
 │   └── config_test.go   # Configuration tests
 ├── ai/                  # AI provider implementations
 │   ├── provider.go      # Provider interface and implementations
-│   └── provider_test.go # Provider tests
+│   ├── intent.go        # AI-powered intent detection
+│   ├── tools.go         # Tool execution framework
+│   └── *_test.go        # Comprehensive test suites
+├── fileops/             # File system operations
+│   ├── fileops.go       # CRUD operations for files/directories
+│   ├── commands.go      # Direct command interface
+│   └── *_test.go        # File operation tests
 ├── tui/                 # Terminal UI components
 │   └── model.go         # Bubble Tea model implementation
 ├── go.mod              # Go module file

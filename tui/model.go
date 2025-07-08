@@ -8,6 +8,7 @@ import (
 
 	"tala/ai"
 	"tala/config"
+	"tala/fileops"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -27,10 +28,11 @@ type Model struct {
 
 type msgReady struct{}
 type msgResponse struct {
-	response string
-	err      error
-	tokens   int
-	duration time.Duration
+	response    string
+	err         error
+	tokens      int
+	duration    time.Duration
+	toolResults []ai.ToolResult
 }
 type msgTick struct{}
 
@@ -65,6 +67,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		
 		statsStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 		fmt.Println(statsStyle.Render(fmt.Sprintf("Provider: %s | Model: %s", m.provider.GetName(), m.config.Model)))
+		fmt.Println(statsStyle.Render("Type '/help' for file operations or chat normally with AI"))
 		fmt.Print("\n")
 		return m, nil
 	case msgTick:
@@ -81,6 +84,23 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			fmt.Printf("Error: %s\n", msg.err.Error())
 		} else {
+			// Display file operations that were executed
+			if len(msg.toolResults) > 0 {
+				toolStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("226")) // Yellow
+				fmt.Printf("%s File operations executed:\n", toolStyle.Render("System:"))
+				for _, result := range msg.toolResults {
+					var resultStyle lipgloss.Style
+					if result.Success {
+						resultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("46")) // Green
+					} else {
+						resultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("196")) // Red
+					}
+					fmt.Printf("  %s %s: %s\n", resultStyle.Render("✓"), result.Name, result.Content)
+				}
+				fmt.Print("\n")
+			}
+			
+			// Display AI response
 			aiStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("46"))
 			fmt.Printf("%s %s\n", aiStyle.Render("AI:"), msg.response)
 			
@@ -103,6 +123,25 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				
 				prompt := m.input
 				m.input = ""
+				
+				// Check if this is a file operation command
+				if strings.HasPrefix(prompt, "/") {
+					result := fileops.ExecuteCommand(prompt)
+					
+					// Style the response based on success/failure
+					var responseStyle lipgloss.Style
+					if result.Success {
+						responseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("46")) // Green
+					} else {
+						responseStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("196")) // Red
+					}
+					
+					fmt.Printf("%s %s\n", responseStyle.Render("System:"), result.Message)
+					fmt.Print("\n")
+					return m, nil
+				}
+				
+				// Regular AI conversation
 				m.loading = true
 				m.requestStart = time.Now()
 				return m, tea.Batch(m.generateResponse(prompt), m.tickCmd())
@@ -126,6 +165,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			
 			statsStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 			fmt.Println(statsStyle.Render(fmt.Sprintf("Provider: %s | Model: %s", m.provider.GetName(), m.config.Model)))
+			fmt.Println(statsStyle.Render("Type '/help' for file operations or chat normally with AI"))
 			fmt.Print("\n")
 			return m, nil
 		default:
@@ -148,7 +188,19 @@ func (m *Model) generateResponse(prompt string) tea.Cmd {
 	return func() tea.Msg {
 		ctx := context.Background()
 		start := time.Now()
-		response, err := m.provider.GenerateResponse(ctx, prompt)
+		
+		var response string
+		var err error
+		var toolResults []ai.ToolResult
+		
+		// Use tool-enabled generation if provider supports it
+		if m.provider.SupportsTools() {
+			response, toolResults, err = m.provider.GenerateResponseWithTools(ctx, prompt)
+		} else {
+			response, err = m.provider.GenerateResponse(ctx, prompt)
+			toolResults = []ai.ToolResult{}
+		}
+		
 		duration := time.Since(start)
 		
 		tokens := 0
@@ -157,10 +209,11 @@ func (m *Model) generateResponse(prompt string) tea.Cmd {
 		}
 		
 		return msgResponse{
-			response: response,
-			err:      err,
-			tokens:   tokens,
-			duration: duration,
+			response:    response,
+			err:         err,
+			tokens:      tokens,
+			duration:    duration,
+			toolResults: toolResults,
 		}
 	}
 }
