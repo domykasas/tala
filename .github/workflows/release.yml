@@ -125,6 +125,8 @@ jobs:
         # Install packaging tools
         sudo apt-get update
         sudo apt-get install -y alien rpm genisoimage imagemagick zip wget
+        # Install snapcraft
+        sudo snap install snapcraft --classic
 
     - name: Build binaries and packages
       if: steps.release-type.outputs.manual_dispatch == 'false'
@@ -312,6 +314,27 @@ jobs:
         # Create AppImage
         ./appimagetool pkg/appdir build/tala-$VERSION-linux-x86_64.AppImage || echo "AppImage creation failed, skipping"
 
+    - name: Create Snap package
+      if: steps.release-type.outputs.manual_dispatch == 'false'
+      run: |
+        VERSION=${{ steps.release-type.outputs.tag_name }}
+        
+        echo "Creating Snap package..."
+        # Update snapcraft.yaml with current version
+        sed -i "s/version: git/version: ${VERSION#v}/" snapcraft.yaml
+        
+        # Build snap with destructive mode to avoid LXD issues in CI
+        snapcraft --destructive-mode
+        
+        # Rename snap to include version
+        if ls *.snap 1> /dev/null 2>&1; then
+          mv *.snap build/tala-$VERSION-linux-amd64.snap
+          echo "Snap package created successfully"
+        else
+          echo "Snap creation failed, creating placeholder"
+          touch build/tala-$VERSION-linux-amd64.snap.failed
+        fi
+
     - name: Create checksums
       if: steps.release-type.outputs.manual_dispatch == 'false'
       run: |
@@ -356,7 +379,8 @@ jobs:
           | Binary | Standalone executable | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64` |
           | DEB | Debian/Ubuntu package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64.deb` |
           | RPM | Red Hat/Fedora package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-x86_64.rpm` |
-          | AppImage | Universal Linux package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-x86_64.AppImage` |
+          | Snap | Universal Linux package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64.snap` |
+          | AppImage | Portable Linux package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-x86_64.AppImage` |
           | Archive | Compressed archive | `tala-${{ steps.release-type.outputs.tag_name }}-linux-x64.tar.xz` |
           | ARM64 | ARM64 binary | `tala-${{ steps.release-type.outputs.tag_name }}-linux-arm64` |
           

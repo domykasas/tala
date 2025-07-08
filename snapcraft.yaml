@@ -1,0 +1,43 @@
+name: tala
+version: git
+summary: Terminal AI Language Assistant
+description: |
+  Tala is a terminal-based AI language assistant built with Go and Bubble Tea. 
+  It provides an interactive interface for communicating with various AI providers 
+  including OpenAI, Anthropic, and Ollama, with intelligent file operations and 
+  shell command execution capabilities.
+
+grade: stable
+confinement: strict
+base: core22
+
+architectures:
+  - build-on: amd64
+
+apps:
+  tala:
+    command: bin/tala
+    plugs:
+      - home
+      - network
+      - network-bind
+      - personal-files
+
+parts:
+  tala:
+    plugin: go
+    source: .
+    build-snaps:
+      - go/1.24/stable
+    build-packages:
+      - git
+    override-build: |
+      craftctl default
+      # Copy the built binary to the correct location
+      cp $CRAFT_PART_BUILD/tala $CRAFT_PART_INSTALL/bin/tala
+
+plugs:
+  personal-files:
+    interface: personal-files
+    read:
+      - $HOME/.config/tala

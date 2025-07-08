@@ -1,0 +1,46 @@
+name: Publish to Snap Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish'
+        required: true
+        type: string
+  release:
+    types: [published]
+
+jobs:
+  publish-snap:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Determine release tag
+      id: get-tag
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          TAG="${{ inputs.tag }}"
+        else
+          TAG=${GITHUB_REF#refs/tags/}
+        fi
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "Release tag: $TAG"
+    
+    - name: Download snap from release
+      uses: dsaltares/fetch-gh-release-asset@master
+      with:
+        version: tags/${{ steps.get-tag.outputs.tag }}
+        file: "tala-${{ steps.get-tag.outputs.tag }}-linux-amd64.snap"
+        target: "tala.snap"
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Publish to Snap Store
+      uses: snapcore/action-publish@v1
+      env:
+        SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+      with:
+        snap: tala.snap
+        release: stable
