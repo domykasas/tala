@@ -66,7 +66,7 @@ tala/
 - Provider: `ollama`
 - Model: `deepseek-r1`
 - Temperature: `0.7`
-- Max Tokens: `1000`
+- Max Tokens: `0` (no limit)
 - System Prompt: `"You are a helpful AI assistant."`
 
 ### Configuration Validation
@@ -153,11 +153,44 @@ type Provider interface {
 - **Provider Integration**: All providers support tool calling through enhanced interface
 - **Fallback System**: Pattern matching fallback when AI intent detection fails
 
+#### Security Model for AI Tools
+- **Command Blacklist**: Dangerous commands (`rm -rf`, `sudo`, `chmod 777`) are blocked
+- **Timeout Protection**: All shell commands timeout after 30 seconds maximum
+- **Output Limits**: Command output truncated to prevent memory exhaustion
+- **Path Validation**: File operations restricted to working directory and subdirectories
+- **Process Cleanup**: Proper cleanup of timed-out or failed processes
+
 ### Configuration Management
 - Auto-creates config file with defaults if missing
 - Validates provider-specific requirements
 - Uses JSON marshaling for persistence
 - File permissions set to 0644 for security
+
+### Dual Command Architecture
+Tala implements a unique dual-interface system:
+
+**1. Direct Commands (Immediate Execution)**
+- **Trigger**: Input prefixed with `/` (e.g., `/ls`, `/cat file.txt`)
+- **Processing**: Bypasses AI, directly executes via `fileops.ExecuteCommand()`
+- **Response**: Immediate system response with color coding
+- **Use Case**: Quick file operations without AI interpretation overhead
+
+**2. Natural Language Commands (AI-Mediated)**
+- **Trigger**: Regular input without `/` prefix
+- **Processing**: AI interprets intent and decides whether to use tools
+- **Response**: AI-generated response enhanced with tool execution results
+- **Use Case**: Complex requests requiring context understanding
+
+**Decision Flow**:
+```
+User Input → Starts with '/'? → YES → Direct Command Execution
+                              → NO  → AI Intent Detection → Tool Selection → AI Response
+```
+
+**Example Patterns**:
+- `/ls` vs "show me all files" - both list files, different execution paths
+- `/cat config.json` vs "what's in the config file?" - both read files
+- Complex: "create a backup of main.go and show me the differences" - only works via AI
 
 ## Troubleshooting Guide
 
@@ -203,6 +236,12 @@ go test ./... -cover
 
 # Run specific test
 go test ./ai -run TestOllamaProvider
+
+# Run tests with race detection
+go test -race ./...
+
+# Run tests with timeout
+go test -timeout=30s ./...
 ```
 
 ## Adding New Providers
@@ -228,8 +267,17 @@ func (p *NewProvider) GenerateResponse(ctx context.Context, prompt string) (stri
     // Implement API call logic
 }
 
+func (p *NewProvider) GenerateResponseWithTools(ctx context.Context, prompt string) (string, []ToolResult, error) {
+    // Implement tool-aware API call logic
+    // Return both response and tool execution results
+}
+
 func (p *NewProvider) GetName() string {
     return "NewProvider"
+}
+
+func (p *NewProvider) SupportsTools() bool {
+    return true // or false based on provider capabilities
 }
 ```
 
@@ -240,11 +288,13 @@ func (p *NewProvider) GetName() string {
 - Test configuration loading and validation
 - Test TUI state transitions
 - Use table-driven tests for multiple scenarios
+- Temporary directory isolation for file operation tests
 
 ### Integration Tests
 - Test with actual Ollama instance when available
 - Validate end-to-end message flow
 - Test error handling and recovery
+- AI tool execution with real shell commands (in safe test environment)
 
 ### Test Coverage
 Current coverage focuses on:
@@ -294,7 +344,9 @@ Current coverage focuses on:
 # Development
 go mod tidy              # Update dependencies
 go test ./...           # Run all tests
+go test ./... -cover    # Run tests with coverage
 go build -o tala        # Build binary
+go clean                # Clean build artifacts
 
 # Configuration
 ~/.config/tala/config.json  # Config file location
@@ -302,6 +354,7 @@ go build -o tala        # Build binary
 # Running
 ./tala                  # Start Tala
 export DEBUG=1          # Enable debug mode
+DEBUG=1 ./tala          # Debug mode inline
 ```
 
 ### Key Files

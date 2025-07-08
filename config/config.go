@@ -21,7 +21,7 @@ func DefaultConfig() *Config {
 		Provider:     "ollama",
 		Model:        "deepseek-r1",
 		Temperature:  0.7,
-		MaxTokens:    1000,
+		MaxTokens:    0, // 0 means no token limit
 		SystemPrompt: "You are a helpful AI assistant.",
 	}
 }

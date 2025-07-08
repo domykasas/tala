@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4] - 2025-07-08
+
+### Added
+- **Comprehensive CI/CD workflows**: Enhanced GitHub Actions for better quality assurance
+  - **Security scanning**: Added Gosec security scanner, dependency checks, and vulnerability scanning
+  - **Multi-platform testing**: Cross-platform builds on Ubuntu, Windows, and macOS
+  - **Go version matrix**: Testing across Go 1.21, 1.22, and 1.23
+  - **Code coverage**: Race condition detection and coverage reporting with Codecov integration
+  - **Automated releases**: Tag-based release workflow with cross-platform binary builds
+- **Code quality tools**: Integrated linting, vetting, and static analysis
+- **Security automation**: Weekly scheduled security scans and SARIF reporting
+
+### Enhanced
+- **CI pipeline reliability**: Improved test stability and comprehensive coverage
+- **Development workflow**: Better developer experience with automated quality checks
+- **Release process**: Streamlined binary distribution for multiple platforms
+
+## [0.0.3] - 2025-07-08
+
+### Changed
+- **Configuration defaults**: Removed default token limit (set to 0 for unlimited)
+- **Enhanced documentation**: Significantly improved CLAUDE.md with architectural insights
+  - Added dual command architecture explanation
+  - Enhanced security model documentation
+  - Improved provider implementation guidance
+  - Better testing command examples
+  - Expanded troubleshooting guide
+
 ## [0.0.2] - 2025-07-08
 
 ### Added
