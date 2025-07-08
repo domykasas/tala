@@ -2,7 +2,7 @@
 
 This document outlines the planned development roadmap for Tala - Terminal AI Language Assistant.
 
-## Version 0.0.1 - Initial Release ✅ (Current)
+## Version 0.0.1 - Initial Release ✅ (Released)
 
 - [x] Basic terminal UI with Bubble Tea
 - [x] Configuration management system
@@ -12,6 +12,49 @@ This document outlines the planned development roadmap for Tala - Terminal AI La
 - [x] HTTP integration for Ollama API
 - [x] Comprehensive test suite
 - [x] Documentation and setup guides
+
+## Version 0.0.2 - AI-Integrated Operations ✅ (Released)
+
+- [x] AI-integrated file operations with natural language commands
+- [x] Shell command execution with security filtering
+- [x] AI-powered intent detection system
+- [x] Direct command interface with slash commands
+- [x] System information tools (pwd, ls, process management)
+- [x] Comprehensive security model with timeout protection
+- [x] Enhanced test coverage for new functionality
+
+## Version 0.0.3 - Documentation Enhancement ✅ (Released)
+
+- [x] Enhanced CLAUDE.md with architectural insights
+- [x] Dual command architecture documentation
+- [x] Security model documentation improvements
+- [x] Provider implementation guidance
+- [x] Configuration defaults optimization (unlimited tokens)
+
+## Version 0.0.4 - CI/CD Infrastructure ✅ (Released)
+
+- [x] Comprehensive GitHub Actions workflows
+- [x] Multi-platform testing (Ubuntu, Windows, macOS)
+- [x] Go version matrix testing (1.21, 1.22, 1.23)
+- [x] Security scanning with Gosec and vulnerability checks
+- [x] Code coverage reporting with race condition detection
+- [x] Automated release workflow with cross-platform binaries
+- [x] Code quality tools integration (linting, vetting)
+
+## Version 0.0.5 - Workflow Fixes ✅ (Released)
+
+- [x] Fixed GitHub Actions workflow configurations
+- [x] Corrected security scanner import paths
+- [x] Replaced deprecated linting tools
+- [x] Enhanced workflow reliability and tool compatibility
+
+## Version 0.0.6 - Code Quality ✅ (Current)
+
+- [x] Fixed staticcheck linting errors across codebase
+- [x] Improved code consistency and maintainability
+- [x] Enhanced error message formatting
+- [x] Removed unused utility functions
+- [x] Optimized string operations
 
 ## Version 0.1.0 - Enhanced AI Provider Support
 

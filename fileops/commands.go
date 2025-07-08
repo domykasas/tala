@@ -211,9 +211,7 @@ func GetHelpText() string {
 // ExecuteCommand parses and executes a file operation command
 func ExecuteCommand(input string) *FileOperation {
 	// Remove leading slash if present
-	if strings.HasPrefix(input, "/") {
-		input = input[1:]
-	}
+	input = strings.TrimPrefix(input, "/")
 	
 	// Special case for help
 	if input == "help" || input == "h" {

@@ -417,7 +417,7 @@ func ExecuteTool(toolName string, args map[string]interface{}) ToolResult {
 		if tool.Name == toolName {
 			content := tool.Execute(args)
 			// Determine success based on whether the content indicates an error
-			contentStr := fmt.Sprintf("%s", content)
+			contentStr := content
 			success := !strings.HasPrefix(contentStr, "Error") && 
 					  !strings.HasPrefix(contentStr, "Failed")
 			

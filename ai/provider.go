@@ -228,7 +228,7 @@ func (p *OllamaProvider) GenerateResponse(ctx context.Context, prompt string) (s
 	}
 
 	if ollamaResp.Error != "" {
-		return "", fmt.Errorf("Ollama error: %s", ollamaResp.Error)
+		return "", fmt.Errorf("ollama error: %s", ollamaResp.Error)
 	}
 
 	return ollamaResp.Response, nil

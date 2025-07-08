@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6] - 2025-07-08
+
+### Fixed
+- **Code quality**: Fixed staticcheck linting errors across codebase
+  - Corrected error message capitalization in ai/provider.go
+  - Removed unnecessary fmt.Sprintf in ai/tools.go
+  - Replaced conditional with unconditional strings.TrimPrefix in fileops/commands.go
+  - Removed unused min/max functions in tui/model.go
+- **Documentation**: Updated ROADMAP.md with completed version history
+- **Development workflow**: Enhanced code maintainability and consistency
+
+### Enhanced
+- **Code standards**: Improved adherence to Go best practices
+- **Maintainability**: Cleaner, more readable code structure
+- **Development process**: Better integration with static analysis tools
+
 ## [0.0.5] - 2025-07-08
 
 ### Fixed

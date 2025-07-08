@@ -18,6 +18,8 @@ go build -o tala
 
 **Note**: When helping with Tala development, do not build the application or delete the `tala` binary file. The user will build it themselves.
 
+**Important**: Always remember to update ROADMAP.md when making significant changes or releases. The roadmap should reflect current development status and future plans.
+
 ### Dependencies
 ```bash
 go mod tidy
