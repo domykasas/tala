@@ -1,8 +1,8 @@
 # Tala - Terminal AI Language Assistant
 
-![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)
+[![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)](https://github.com/domykasas/tala/releases/latest)
 ![Go](https://img.shields.io/badge/Go-1.24.4+-00ADD8.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/domykasas/tala?tab=MIT-1-ov-file#MIT-1-ov-file)
 
 **📥 [Download Latest Release](https://github.com/domykasas/tala/releases/latest)**
 

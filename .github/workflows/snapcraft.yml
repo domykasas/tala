@@ -1,22 +1,29 @@
-name: Publish to Snap Store
+name: Build and Publish Snap
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to publish'
+        description: 'Release tag to build and publish'
         required: true
         type: string
   release:
     types: [published]
 
 jobs:
-  publish-snap:
+  build-and-publish-snap:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.tag || github.ref }}
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.4'
     
     - name: Determine release tag
       id: get-tag
@@ -29,15 +36,42 @@ jobs:
         echo "tag=$TAG" >> $GITHUB_OUTPUT
         echo "Release tag: $TAG"
     
-    - name: Download snap from release
-      uses: dsaltares/fetch-gh-release-asset@master
+    - name: Build binary
+      run: |
+        VERSION=${{ steps.get-tag.outputs.tag }}
+        mkdir -p build
+        GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-linux-amd64 .
+    
+    - name: Install Snapcraft
+      run: |
+        sudo snap install snapcraft --classic
+        
+    - name: Build Snap
+      run: |
+        VERSION=${{ steps.get-tag.outputs.tag }}
+        # Update snapcraft.yaml with current version
+        sed -i "s/version: git/version: ${VERSION#v}/" snapcraft.yaml
+        
+        # Build snap
+        snapcraft --destructive-mode
+        
+        # Rename snap to expected format
+        if ls *.snap 1> /dev/null 2>&1; then
+          mv *.snap tala.snap
+          echo "Snap built successfully"
+        else
+          echo "Snap build failed"
+          exit 1
+        fi
+    
+    - name: Upload snap as artifact
+      uses: actions/upload-artifact@v3
       with:
-        version: tags/${{ steps.get-tag.outputs.tag }}
-        file: "tala-${{ steps.get-tag.outputs.tag }}-linux-amd64.snap"
-        target: "tala.snap"
-        token: ${{ secrets.GITHUB_TOKEN }}
+        name: snap-package
+        path: tala.snap
     
     - name: Publish to Snap Store
+      if: env.SNAPCRAFT_STORE_CREDENTIALS != ''
       uses: snapcore/action-publish@v1
       env:
         SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
