@@ -55,8 +55,17 @@ jobs:
 
     - name: Install snapcraft
       run: |
+        # Update package lists and install snapd if needed
+        sudo apt-get update
+        
+        # Install snapd if not present
+        sudo apt-get install -y snapd
+        
+        # Install snapcraft via snap
         sudo snap install snapcraft --classic
-        sudo snap install multipass
+        
+        # Install multipass for fallback builds
+        sudo snap install multipass --classic || echo "Multipass installation failed, continuing"
 
     - name: Update snapcraft.yaml version
       run: |
@@ -75,31 +84,40 @@ jobs:
         
         echo "Building snap package..."
         
-        # Try multiple strategies for snap building
+        # Check snapcraft installation
+        snapcraft --version
         
-        # Strategy 1: Use destructive mode (fastest)
+        # Strategy 1: Use destructive mode (recommended for CI)
+        echo "Trying destructive mode build..."
         if snapcraft --destructive-mode --verbose; then
           echo "✓ Snap built successfully with destructive mode"
         else
-          echo "✗ Destructive mode failed, trying with multipass..."
+          echo "✗ Destructive mode failed, trying alternative approach..."
           
-          # Strategy 2: Use multipass (more isolated)
-          if snapcraft --use-lxd --verbose; then
-            echo "✓ Snap built successfully with multipass"
+          # Strategy 2: Simple snapcraft build (let it choose the backend)
+          echo "Trying default snapcraft build..."
+          if snapcraft --verbose; then
+            echo "✓ Snap built successfully with default backend"
           else
-            echo "✗ Multipass failed, trying with docker..."
+            echo "✗ Default build failed, trying with LXD..."
             
-            # Strategy 3: Use docker (most isolated)
+            # Strategy 3: Force LXD backend
+            echo "Trying LXD backend..."
             if snapcraft --use-lxd --verbose; then
-              echo "✓ Snap built successfully with docker"
+              echo "✓ Snap built successfully with LXD"
             else
               echo "✗ All snap build strategies failed"
+              echo "Available snap files:"
+              ls -la *.snap 2>/dev/null || echo "No snap files found"
               exit 1
             fi
           fi
         fi
         
         # Find and rename the snap file
+        echo "Looking for snap files..."
+        ls -la *.snap || echo "No snap files in current directory"
+        
         if ls *.snap 1> /dev/null 2>&1; then
           SNAP_FILE=$(ls *.snap | head -1)
           mv "$SNAP_FILE" tala-$VERSION-linux-amd64.snap
@@ -107,6 +125,8 @@ jobs:
           ls -la tala-$VERSION-linux-amd64.snap
         else
           echo "✗ No snap file found after build"
+          echo "Directory contents:"
+          ls -la
           exit 1
         fi
 

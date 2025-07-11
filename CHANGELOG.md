@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2025-07-11
+
+### Fixed
+- **Snapcraft Installation**: Fixed snapcraft package installation error in GitHub Actions
+  - Added proper snapd installation before snapcraft
+  - Improved snap build fallback strategies with better error handling
+  - Enhanced debugging output for snap build process
+  - Made multipass installation optional with graceful failure handling
+
+### Enhanced
+- **Snap Workflow Reliability**: Improved snap building process with multiple fallback strategies
+  - Strategy 1: Destructive mode (fastest for CI)
+  - Strategy 2: Default snapcraft build (automatic backend selection)
+  - Strategy 3: LXD backend (most isolated)
+  - Better error reporting and directory listing for debugging
+
 ## [1.0.4] - 2025-07-11
 
 ### Added
