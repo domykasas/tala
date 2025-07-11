@@ -212,6 +212,13 @@ Ready for release → Create tag → Push tag → release.yml + snapcraft.yml �
    - Generates SHA256 checksums for verification
    - Builds and tests Snap packages
 
+**⚠️ CRITICAL REMINDER FOR CLAUDE**:
+- **`git push`** = Pushes commits only (triggers CI workflow)
+- **`git push origin v1.0.X`** = Pushes tags (triggers RELEASE workflows)
+- **GitHub releases ONLY appear when you push TAGS, not commits!**
+- **Always do BOTH**: First `git push` for commits, then `git push origin vX.X.X` for releases
+- **Missing step**: If no GitHub release appears, you forgot to push the tag!
+
 **Architecture Benefits**:
 - ✅ Comprehensive platform coverage (Linux, Windows, macOS, FreeBSD)
 - ✅ Professional packaging (DEB, RPM, AppImage, DMG, ZIP, Snap)
