@@ -16,7 +16,7 @@ import (
 	"tala/internal/tui"
 )
 
-var version = "1.0.5" // Version can be overridden at build time
+var version = "1.0.6" // Version can be overridden at build time
 
 func main() {
 	// Parse command line flags
