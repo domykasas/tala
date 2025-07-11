@@ -5,10 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 **Tala** - Terminal-based AI language assistant with multiple interface modes
 - **Language**: Go 1.24.4+
-- **UI Frameworks**: Bubble Tea (TUI), Fyne (GUI)
+- **UI Frameworks**: Simple terminal I/O (TUI), Fyne (GUI)  
 - **Architecture**: Modular internal packages (ai, config, fileops, tui, gui)
 - **Build Modes**: TUI (default), GUI
-- **Current Version**: 1.0.1
+- **Current Version**: 1.0.2
 
 ## Development Philosophy
 
@@ -17,6 +17,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Problem-Focused**: Understand root causes systematically before implementing solutions
 - **Minimal Changes**: Make targeted, minimal modifications to achieve goals
 - **Documentation-First**: Always update documentation after modifications
+
+### Dependency Philosophy
+- **Minimal Dependencies**: Use as few external modules as possible
+- **Standard Library First**: Prefer Go standard library over external packages
+- **Simple Solutions**: Avoid complex frameworks when basic I/O suffices
+- **Copy-Paste Friendly**: Terminal interface must support full history access and copy-paste
 
 ### Version Management
 - **Semantic Versioning**: MAJOR.MINOR.PATCH (breaking.feature.bugfix)
@@ -94,6 +100,21 @@ go build -o tala
 go build -tags gui -o tala-gui
 ```
 
+### GUI Interface Features
+The GUI mode provides an enhanced graphical interface with all terminal features:
+
+- **Dark Theme**: Professional dark theme with semantic color coding
+- **Larger Input Fields**: 600x100px input area with multiline support
+- **Emoji Integration**: Consistent emoji usage (🤖 Provider, 👤 User, 🔧 System, ❌ Error)
+- **Professional Layout**: Header with provider/model info, enhanced menus
+- **Progress Indicators**: Visual progress bars and loading states
+- **Concurrent Input**: Queue-based input handling for responsive interaction
+- **Session Statistics**: Real-time display of requests, tokens, and timing
+- **Paragraph Streaming**: AI responses appear paragraph by paragraph
+- **Enhanced Settings**: Larger configuration dialog with emoji labels
+- **Comprehensive Help**: Built-in help system with keyboard shortcuts
+- **File Operations**: Full slash command support and natural language processing
+
 **Note**: When helping with Tala development, do not build the application or delete the `tala` binary file. The user will build it themselves.
 
 **🚨 CRITICAL**: Always use `go test ./...` for compilation verification, never `go build` unless explicitly requested by the user.
@@ -105,6 +126,8 @@ go build -tags gui -o tala-gui
 **Change Documentation**: After making any significant file updates, bug fixes, or feature additions, always update CHANGELOG.md with the changes following the Keep a Changelog format. This ensures proper version history tracking.
 
 **Commit Messages**: Do not include Claude Code attribution or co-authorship lines in commit messages. Keep commits clean and professional without AI assistant signatures.
+
+**🚨 GUI Chat History Widget**: CRITICAL - The chat history widget in `internal/gui/app.go` MUST remain as `widget.Entry` to maintain copy-paste functionality. Do NOT change it back to `widget.Label` or `widget.RichText` as this breaks text selection and copying. The current implementation uses Entry with OnChanged handler for read-only protection while preserving full text selection capabilities. This was specifically requested by users and is essential for GUI usability.
 
 ## Bug Tracking and Resolution
 
@@ -141,7 +164,41 @@ go build -tags gui -o tala-gui
 2. **Only if requested**: `go build` for specific binary creation
 3. **Never**: Proactive building without user request
 
-**Release Workflows**: The project uses a dual-workflow architecture for optimal release management:
+**Release Workflows**: The project uses a comprehensive multi-workflow architecture inspired by Shario for optimal release management:
+
+**go.yml** (Continuous Integration):
+- **Trigger**: Push/PR to main/develop branches
+- **Purpose**: Comprehensive testing and validation for all code changes
+- **Features**:
+  - **Multi-OS Testing**: Ubuntu, Windows, macOS
+  - **Cross-Compilation**: Tests all target platforms (Linux, Windows, macOS, FreeBSD)
+  - **Security Scanning**: Gosec, govulncheck, and SARIF reporting
+  - **Code Quality**: Staticcheck, golangci-lint, and coverage reporting
+  - **Build Validation**: Both TUI and GUI variants tested
+
+**release.yml** (Production Releases):
+- **Trigger**: Tag pushes (v*.*.*) + manual dispatch option
+- **Purpose**: Professional multi-platform release creation
+- **Architecture**: Matrix-based builds with artifact collection
+- **Platforms**: 
+  - Linux (amd64/arm64): DEB, RPM, Snap, AppImage, tar.xz, binaries
+  - Windows (amd64/arm64): Executables, Squirrel packages, binaries
+  - macOS (Intel/Apple Silicon): DMG, app bundles, binaries
+  - FreeBSD (amd64): Standalone binaries
+- **Features**:
+  - **Automated Packaging**: All major package formats created automatically
+  - **Comprehensive Checksums**: SHA256 verification for all assets
+  - **Professional Release Notes**: Detailed download tables and installation instructions
+  - **Changelog Integration**: Automatic extraction from CHANGELOG.md
+
+**snapcraft.yml** (Snap Package Workflow):
+- **Trigger**: Tag pushes + manual dispatch option
+- **Purpose**: Dedicated Snap package creation with multiple fallback strategies
+- **Strategies**: Destructive mode → Multipass → Docker fallbacks
+- **Features**:
+  - **Snap Testing**: Local installation and version verification
+  - **Store Publishing**: Ready for Snap Store integration (requires credentials)
+  - **Artifact Management**: Automatic upload to GitHub releases
 
 **pre-release.yml** (Automatic Pre-releases):
 - **Trigger**: Merged PRs to main branch
@@ -150,34 +207,32 @@ go build -tags gui -o tala-gui
 - **Preferred Format**: Always use `-rc.X` (with dot) instead of `-rcX` for consistency
 - **Benefit**: Stakeholders can test features immediately after merge without manual intervention
 
-**release.yml** (Manual Releases):
-- **Trigger**: Tag pushes + manual dispatch option
-- **Purpose**: Official releases when ready for production
-- **Version Classification**:
-  - `v*.*.*-rc*` = Pre-release (supports both `v0.1.0-rc1` and `v0.1.0-rc.1` formats)
-  - `v*.0.0` = Major Release
-  - `v*.*.*` = Regular Release
-- **Benefit**: Full control over official release timing
-
 **Development Workflow**:
 ```
-Development → PR → Merge → pre-release.yml → v0.1.0-rc.1 (automatic)
-                                          → v0.1.0-rc.2 (automatic)
-Ready for release → Create tag → Push tag → release.yml → v0.1.0 (manual)
+Development → PR → go.yml (CI testing)
+            ↓
+         Merge → pre-release.yml → v0.1.0-rc.1 (automatic)
+                                → v0.1.0-rc.2 (automatic)
+            ↓
+Ready for release → Create tag → Push tag → release.yml + snapcraft.yml → v0.1.0 (manual)
 ```
 
 **Manual Release Process**:
 1. Create tag: `git tag v0.1.1-rc.1` (use `-rc.X` format for pre-releases)
 2. Push tag: `git push origin v0.1.1-rc.1`
-3. GitHub Actions will automatically build and create the release
+3. GitHub Actions will automatically:
+   - Build all platform binaries and packages
+   - Create comprehensive release with download tables
+   - Generate SHA256 checksums for verification
+   - Build and test Snap packages
 
 **Architecture Benefits**:
-- ✅ Automatic testing releases for immediate feedback
-- ✅ Manual control over official releases
-- ✅ Clear separation of automated vs intentional releases
-- ✅ Flexibility to create both RC formats
-
-Both workflows build cross-platform binaries (Linux, Windows, macOS) for amd64 and arm64 architectures, automatically extract changelog from CHANGELOG.md, create SHA256 checksums, and provide comprehensive release notes.
+- ✅ **Comprehensive Platform Support**: Linux, Windows, macOS, FreeBSD
+- ✅ **Professional Packaging**: DEB, RPM, Snap, AppImage, DMG, and more
+- ✅ **Automated Quality Control**: Multi-OS testing, security scanning, coverage
+- ✅ **Reliable Snap Building**: Dedicated workflow with fallback strategies  
+- ✅ **Enterprise-Ready**: Professional release notes, checksums, and verification
+- ✅ **Shario-Inspired**: Proven multi-platform build approach
 
 ### Dependencies
 ```bash

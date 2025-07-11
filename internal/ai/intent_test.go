@@ -265,6 +265,18 @@ func (m *mockProvider) SupportsTools() bool {
 	return true
 }
 
+func (m *mockProvider) GenerateStreamingResponse(ctx context.Context, prompt string, callback func(chunk string)) (string, error) {
+	// For testing, just call the callback with the full response
+	if callback != nil {
+		callback(m.response)
+	}
+	return m.response, m.err
+}
+
+func (m *mockProvider) SupportsStreaming() bool {
+	return true
+}
+
 func TestIntentDetector_DetectIntent(t *testing.T) {
 	tests := []struct {
 		name          string

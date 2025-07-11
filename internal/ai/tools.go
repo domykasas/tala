@@ -30,6 +30,19 @@ type ToolResult struct {
 	Success bool   `json:"success"`
 }
 
+// ToolChain represents a sequence of tools to execute
+type ToolChain struct {
+	Tools   []ToolCall        `json:"tools"`
+	Context map[string]string `json:"context"`
+}
+
+// ToolExecution represents the execution context for tool chaining
+type ToolExecution struct {
+	Chain   *ToolChain
+	Results []ToolResult
+	Context map[string]string
+}
+
 // GetAvailableTools returns all tools available to the AI
 func GetAvailableTools() []Tool {
 	return []Tool{
@@ -674,4 +687,132 @@ func isCommandSafe(command string) bool {
 	}
 	
 	return false
+}
+
+// ExecuteToolChain executes a chain of tools with context passing
+func ExecuteToolChain(chain *ToolChain) *ToolExecution {
+	execution := &ToolExecution{
+		Chain:   chain,
+		Results: make([]ToolResult, 0),
+		Context: make(map[string]string),
+	}
+	
+	// Initialize context with chain context
+	for k, v := range chain.Context {
+		execution.Context[k] = v
+	}
+	
+	// Execute each tool in sequence
+	for _, toolCall := range chain.Tools {
+		// Substitute context variables in arguments
+		substitutedArgs := substituteContextVariables(toolCall.Arguments, execution.Context)
+		
+		// Execute the tool
+		result := ExecuteTool(toolCall.Name, substitutedArgs)
+		execution.Results = append(execution.Results, result)
+		
+		// Update context with result
+		execution.Context[fmt.Sprintf("%s_result", toolCall.Name)] = result.Content
+		execution.Context[fmt.Sprintf("%s_success", toolCall.Name)] = fmt.Sprintf("%v", result.Success)
+		
+		// Break chain if tool failed and it's a critical tool
+		if !result.Success && isCriticalTool(toolCall.Name) {
+			break
+		}
+	}
+	
+	return execution
+}
+
+// substituteContextVariables replaces context variables in tool arguments
+func substituteContextVariables(args map[string]interface{}, context map[string]string) map[string]interface{} {
+	result := make(map[string]interface{})
+	
+	for k, v := range args {
+		if str, ok := v.(string); ok {
+			// Replace context variables like ${var_name}
+			for contextKey, contextValue := range context {
+				placeholder := fmt.Sprintf("${%s}", contextKey)
+				str = strings.ReplaceAll(str, placeholder, contextValue)
+			}
+			result[k] = str
+		} else {
+			result[k] = v
+		}
+	}
+	
+	return result
+}
+
+// isCriticalTool determines if a tool failure should break the chain
+func isCriticalTool(toolName string) bool {
+	criticalTools := []string{
+		"read_file",
+		"write_file",
+		"create_file",
+		"delete_file",
+	}
+	
+	for _, critical := range criticalTools {
+		if toolName == critical {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// CreateToolChain creates a new tool chain
+func CreateToolChain(tools ...ToolCall) *ToolChain {
+	return &ToolChain{
+		Tools:   tools,
+		Context: make(map[string]string),
+	}
+}
+
+// AddTool adds a tool to the chain
+func (tc *ToolChain) AddTool(name string, args map[string]interface{}) *ToolChain {
+	tc.Tools = append(tc.Tools, ToolCall{
+		Name:      name,
+		Arguments: args,
+	})
+	return tc
+}
+
+// SetContext sets a context variable for the chain
+func (tc *ToolChain) SetContext(key, value string) *ToolChain {
+	tc.Context[key] = value
+	return tc
+}
+
+// GetExecutionSummary returns a summary of the tool execution
+func (te *ToolExecution) GetExecutionSummary() string {
+	var summary strings.Builder
+	
+	summary.WriteString("Tool Chain Execution Summary:\n")
+	summary.WriteString(fmt.Sprintf("Total tools executed: %d\n", len(te.Results)))
+	
+	successCount := 0
+	for _, result := range te.Results {
+		if result.Success {
+			successCount++
+		}
+	}
+	
+	summary.WriteString(fmt.Sprintf("Successful: %d, Failed: %d\n\n", successCount, len(te.Results)-successCount))
+	
+	for i, result := range te.Results {
+		status := "✓"
+		if !result.Success {
+			status = "✗"
+		}
+		summary.WriteString(fmt.Sprintf("%d. %s %s\n", i+1, status, result.Name))
+		if len(result.Content) > 100 {
+			summary.WriteString(fmt.Sprintf("   Result: %s...\n", result.Content[:100]))
+		} else {
+			summary.WriteString(fmt.Sprintf("   Result: %s\n", result.Content))
+		}
+	}
+	
+	return summary.String()
 }

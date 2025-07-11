@@ -54,7 +54,13 @@ func (detector *IntentDetector) DetectIntent(ctx context.Context, userInput stri
 func (detector *IntentDetector) createIntentDetectionPrompt(userInput string) string {
 	availableTools := GetAvailableTools()
 	
-	prompt := `You are an intent detection system. Analyze the user input and determine what actions they want to perform.
+	prompt := `You are a conservative intent detection system. Only detect tool usage when the user explicitly requests file operations, commands, or system actions.
+
+DO NOT detect intents for:
+- Greetings (hi, hello, hey)
+- General questions
+- Casual conversation
+- Abstract requests
 
 Available tools and their purposes:
 `
@@ -70,17 +76,12 @@ Respond with JSON containing an array of detected intents. Each intent should ha
 - "parameters": object with the parameters for the tool
 - "confidence": number between 0-1 indicating confidence
 
-Example response format:
-[
-  {
-    "action": "create a file",
-    "tool": "create_file",
-    "parameters": {"filename": "test.txt", "content": "Hello World"},
-    "confidence": 0.9
-  }
-]
+Only detect intents with confidence > 0.8 when user explicitly mentions:
+- File operations (create, read, write, delete specific files)
+- Directory operations (list, create, delete directories)
+- System commands (run specific commands)
 
-If no clear intent is detected, respond with an empty array: []
+For general conversation, greetings, or questions, respond with: []
 
 User input: "` + userInput + `"
 

@@ -7,6 +7,127 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Comprehensive Release System**: Complete multi-platform packaging inspired by Shario
+  - **Cross-Platform Builds**: Linux (amd64/arm64), Windows (amd64/arm64), macOS (Intel/Apple Silicon), FreeBSD (amd64)
+  - **Package Formats**: DEB, RPM, Snap, AppImage, DMG, tar.xz archives, and raw binaries
+  - **Professional Packaging**: Proper control files, app bundles, and desktop integration
+  - **Automated Checksums**: SHA256 verification for all packages and binaries
+  - **Comprehensive Testing**: Cross-compilation validation, security scanning, and coverage reporting
+- **Advanced CI/CD Workflows**: 
+  - **Release Workflow**: Matrix-based builds with artifact collection and GitHub release creation
+  - **Snapcraft Workflow**: Dedicated snap building with multiple fallback strategies
+  - **Enhanced Testing**: Multi-OS testing, security scanning, linting, and coverage reporting
+  - **Build Validation**: Cross-compilation tests for all target platforms
+- **Colorful Terminal Interface**: Comprehensive ANSI color support throughout SimpleTUI
+  - Color-coded user prompts, AI responses, and system messages
+  - Enhanced statistics display with colorful formatting
+  - Improved help and configuration displays with semantic color coding
+  - Better visual hierarchy and readability in terminal output
+- **Enhanced GUI Interface**: Complete redesign to match terminal improvements
+  - **Colorful Theme**: Dark theme with semantic color coding matching terminal
+  - **Larger Input Fields**: Expanded input area (600x100px) with better placeholder text
+  - **Emoji Integration**: Consistent emoji usage throughout interface (🤖, 👤, 🔧, ❌)
+  - **Professional Layout**: Header with provider/model info, enhanced menus, progress indicators
+  - **Concurrent Input**: Queue-based input handling allowing typing while AI processes
+  - **Session Statistics**: Real-time stats display with request/token/timing information
+  - **Paragraph Streaming**: AI responses appear paragraph by paragraph with natural timing
+  - **Enhanced Settings**: Larger configuration dialog with emoji labels and better validation
+
+### Enhanced
+- **Paragraph-Based Streaming Display**: Natural response flow with paragraph-by-paragraph updates
+  - AI responses appear paragraph by paragraph with natural timing (200ms delays)
+  - Maintains stable cursor positioning without jumping
+  - Better reading experience with visual paragraph breaks
+  - Proper word wrapping for terminal width compatibility
+- **Concurrent Input Handling**: Improved non-blocking input system
+  - Users can type next commands while AI is processing responses
+  - Stable cursor positioning without jumping during AI thinking
+  - Clean progress indicators with live session statistics
+- **Release Architecture**: Professional-grade release management
+  - **Dual Workflow System**: Separate release and snapcraft workflows for reliability
+  - **Artifact Management**: Centralized artifact collection and distribution
+  - **Version Management**: Automatic version injection and changelog extraction
+  - **Quality Assurance**: Comprehensive testing and validation before release
+
+### Fixed
+- **Cursor Stability**: Eliminated cursor jumping during AI response generation
+- **Display Interference**: Removed live streaming updates that caused terminal disruption
+- **Input Responsiveness**: Improved concurrent input handling for better user experience
+- **Progress Display Stability**: Fixed thinking progress to use consistent character width formatting
+  - Elapsed time formatted as fixed-width (X.Xs format)
+  - Session statistics always visible with consistent digit padding (3-digit requests, 5-digit tokens)
+  - Fixed line clearing to prevent multiple progress lines appearing on same line
+  - Proper use of `\r\033[K` to clear entire line before updating progress
+  - Fixed session stats visibility from the first request onwards
+- **GUI Interface Issues**: Resolved layout and formatting problems
+  - Removed duplicate "Clear Chat" button that was overlaying text
+  - Fixed message formatting to ensure each message starts on a new line
+  - Significantly enlarged settings input fields from 300x40px to 800x60px for excellent usability
+  - Replaced temperature slider with input field for precise value entry
+  - Added helpful labels with value ranges (Temperature: 0.0-2.0, Max Tokens: 0=unlimited)
+  - Improved message spacing and line breaks for better readability
+  - Custom settings dialog with larger dimensions (900x400px) to accommodate bigger input fields
+- **GUI Text Selection and Copy-Paste**: Enhanced text interaction capabilities
+  - Replaced RichText with Entry widget for better text selection and copy-paste functionality
+  - Added clear separator lines (=================================================================) between messages
+  - Improved message formatting with proper line breaks and spacing
+  - Enabled full text selection of conversations for copying
+  - Fixed AI response streaming to display properly with line breaks
+  - Made chat history read-only but fully selectable
+  - Implemented proper read-only protection while maintaining copy-paste functionality
+  - Enhanced text selection with Entry widget instead of Label for better accessibility
+- **GUI Readability and Compatibility**: Improved text rendering and display
+  - Removed emoji characters that don't render properly on all systems
+  - Enhanced text contrast with custom theme and widget styling
+  - Clean message prefixes (USER, AI, SYSTEM, ERROR) instead of emojis
+  - Fixed font rendering issues and improved overall readability
+  - Removed problematic Unicode characters from all UI elements
+  - Switched to Label widget for better text color visibility
+  - Custom theme overrides for better foreground text contrast
+- **GUI Keyboard Behavior and UX**: Enhanced user interaction patterns
+  - Fixed keyboard behavior: Enter for new lines, Shift+Enter to send messages
+  - Updated all placeholder text and help documentation to reflect correct shortcuts
+  - Removed problematic emojis from buttons and menu items for better compatibility
+  - Enhanced settings dialog with detailed explanations for each configuration option
+  - Added comprehensive configuration parameter explanations in both GUI and documentation
+
+### Technical
+- **Build System**: Adopted Shario's proven multi-platform build approach
+  - **CGO Handling**: Disabled for cross-compilation, enabled for native testing
+  - **Package Creation**: Automated creation of all major package formats
+  - **Fallback Strategies**: Multiple build strategies for challenging platforms like Snap
+  - **Quality Control**: Comprehensive testing and validation at every stage
+
+## [1.0.2] - 2025-07-11
+
+### Changed
+- **Simplified TUI Interface**: Replaced Bubble Tea framework with basic terminal I/O
+  - Removed external UI framework dependency for cleaner, simpler implementation
+  - Full copy-paste functionality now available - users can scroll and copy entire conversation history
+  - No more rendering conflicts or display bugs from complex TUI frameworks
+  - Direct terminal output allows natural terminal behavior (scrolling, selecting, copying)
+- **Dependency Minimization**: Reduced external dependencies following new development philosophy
+  - Removed Bubble Tea and related charmbracelet dependencies
+  - Only essential dependencies remain: Fyne for GUI mode
+  - Simpler build process and reduced binary size
+- **Enhanced User Experience**: 
+  - Clean, readable terminal output without formatting artifacts
+  - Word wrapping that respects terminal width
+  - Natural terminal interaction with standard copy-paste support
+  - Preserved all functionality while improving usability
+
+### Added
+- **Development Philosophy**: Added dependency minimization principles to CLAUDE.md
+  - Prefer Go standard library over external packages
+  - Avoid complex frameworks when basic I/O suffices
+  - Ensure copy-paste friendly terminal interfaces
+
+### Fixed
+- **Terminal Display Issues**: Eliminated formatting conflicts and misaligned text
+- **Copy-Paste Functionality**: Full conversation history now accessible via standard terminal selection
+- **Word Wrapping**: Proper text wrapping without UI framework interference
+
 ## [1.0.1] - 2025-07-11
 
 ### Added

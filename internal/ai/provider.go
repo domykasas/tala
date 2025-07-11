@@ -1,20 +1,24 @@
 package ai
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
 type Provider interface {
 	GenerateResponse(ctx context.Context, prompt string) (string, error)
 	GenerateResponseWithTools(ctx context.Context, prompt string) (string, []ToolResult, error)
+	GenerateStreamingResponse(ctx context.Context, prompt string, callback func(chunk string)) (string, error)
 	GetName() string
 	SupportsTools() bool
+	SupportsStreaming() bool
 }
 
 type Message struct {
@@ -51,10 +55,10 @@ func (p *OpenAIProvider) GenerateResponseWithTools(ctx context.Context, prompt s
 		return response, []ToolResult{}, err
 	}
 	
-	// Execute detected tools
+	// Execute detected tools with high confidence threshold
 	var toolResults []ToolResult
 	for _, intent := range intents {
-		if intent.Confidence > 0.5 {
+		if intent.Confidence > 0.8 { // Increased threshold for more conservative execution
 			result := ExecuteTool(intent.Tool, intent.Parameters)
 			toolResults = append(toolResults, result)
 		}
@@ -84,6 +88,34 @@ func (p *OpenAIProvider) SupportsTools() bool {
 
 func (p *OpenAIProvider) GetName() string {
 	return "OpenAI"
+}
+
+func (p *OpenAIProvider) GenerateStreamingResponse(ctx context.Context, prompt string, callback func(chunk string)) (string, error) {
+	// Simulate streaming by sending chunks
+	response := fmt.Sprintf("OpenAI streaming response to: %s", prompt)
+	words := strings.Split(response, " ")
+	
+	var fullResponse strings.Builder
+	for i, word := range words {
+		if i > 0 {
+			word = " " + word
+		}
+		fullResponse.WriteString(word)
+		callback(word)
+		
+		// Small delay to simulate streaming
+		select {
+		case <-ctx.Done():
+			return fullResponse.String(), ctx.Err()
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+	
+	return fullResponse.String(), nil
+}
+
+func (p *OpenAIProvider) SupportsStreaming() bool {
+	return true
 }
 
 
@@ -116,10 +148,10 @@ func (p *AnthropicProvider) GenerateResponseWithTools(ctx context.Context, promp
 		return response, []ToolResult{}, err
 	}
 	
-	// Execute detected tools
+	// Execute detected tools with high confidence threshold
 	var toolResults []ToolResult
 	for _, intent := range intents {
-		if intent.Confidence > 0.5 {
+		if intent.Confidence > 0.8 { // Increased threshold for more conservative execution
 			result := ExecuteTool(intent.Tool, intent.Parameters)
 			toolResults = append(toolResults, result)
 		}
@@ -149,6 +181,34 @@ func (p *AnthropicProvider) SupportsTools() bool {
 
 func (p *AnthropicProvider) GetName() string {
 	return "Anthropic"
+}
+
+func (p *AnthropicProvider) GenerateStreamingResponse(ctx context.Context, prompt string, callback func(chunk string)) (string, error) {
+	// Simulate streaming by sending chunks
+	response := fmt.Sprintf("Anthropic streaming response to: %s", prompt)
+	words := strings.Split(response, " ")
+	
+	var fullResponse strings.Builder
+	for i, word := range words {
+		if i > 0 {
+			word = " " + word
+		}
+		fullResponse.WriteString(word)
+		callback(word)
+		
+		// Small delay to simulate streaming
+		select {
+		case <-ctx.Done():
+			return fullResponse.String(), ctx.Err()
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+	
+	return fullResponse.String(), nil
+}
+
+func (p *AnthropicProvider) SupportsStreaming() bool {
+	return true
 }
 
 
@@ -182,7 +242,7 @@ func NewOllamaProvider(model string, temperature float64, maxTokens int, baseURL
 		MaxTokens:   maxTokens,
 		BaseURL:     baseURL,
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 120 * time.Second, // Increased timeout for large models
 		},
 	}
 }
@@ -247,7 +307,7 @@ func (p *OllamaProvider) GenerateResponseWithTools(ctx context.Context, prompt s
 	// Execute detected tools
 	var toolResults []ToolResult
 	for _, intent := range intents {
-		if intent.Confidence > 0.5 { // Only execute high-confidence intents
+		if intent.Confidence > 0.8 { // Only execute very high-confidence intents
 			result := ExecuteTool(intent.Tool, intent.Parameters)
 			toolResults = append(toolResults, result)
 		}
@@ -293,6 +353,82 @@ func (p *OllamaProvider) SupportsTools() bool {
 
 func (p *OllamaProvider) GetName() string {
 	return "Ollama"
+}
+
+func (p *OllamaProvider) GenerateStreamingResponse(ctx context.Context, prompt string, callback func(chunk string)) (string, error) {
+	reqBody := OllamaRequest{
+		Model:  p.Model,
+		Prompt: prompt,
+		Stream: true, // Enable streaming
+	}
+
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", p.BaseURL+"/api/generate", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var fullResponse strings.Builder
+	scanner := bufio.NewScanner(resp.Body)
+	
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+		
+		var ollamaResp OllamaResponse
+		if err := json.Unmarshal([]byte(line), &ollamaResp); err != nil {
+			continue // Skip malformed lines
+		}
+		
+		if ollamaResp.Error != "" {
+			return fullResponse.String(), fmt.Errorf("ollama error: %s", ollamaResp.Error)
+		}
+		
+		if ollamaResp.Response != "" {
+			fullResponse.WriteString(ollamaResp.Response)
+			callback(ollamaResp.Response)
+		}
+		
+		if ollamaResp.Done {
+			break
+		}
+		
+		// Check for context cancellation
+		select {
+		case <-ctx.Done():
+			return fullResponse.String(), ctx.Err()
+		default:
+		}
+	}
+	
+	if err := scanner.Err(); err != nil {
+		return fullResponse.String(), fmt.Errorf("error reading stream: %w", err)
+	}
+	
+	return fullResponse.String(), nil
+}
+
+func (p *OllamaProvider) SupportsStreaming() bool {
+	return true
 }
 
 

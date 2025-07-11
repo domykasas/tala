@@ -12,8 +12,8 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("Expected provider 'ollama', got %s", cfg.Provider)
 	}
 	
-	if cfg.Model != "deepseek-r1" {
-		t.Errorf("Expected model 'deepseek-r1', got %s", cfg.Model)
+	if cfg.Model != "llama3.2:1b" {
+		t.Errorf("Expected model 'llama3.2:1b', got %s", cfg.Model)
 	}
 	
 	if cfg.Temperature != 0.7 {
