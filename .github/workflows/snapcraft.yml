@@ -58,27 +58,40 @@ jobs:
 
     - name: Install snapcraft
       run: |
-        # Update package lists and install snapd if needed
+        # Update package lists first
         sudo apt-get update
         
-        # Install snapd if not present
-        sudo apt-get install -y snapd
+        # Install snapd and essential packages
+        sudo apt-get install -y snapd squashfs-tools
         
-        # Start and enable snapd service
+        # Reload systemd and start snapd
+        sudo systemctl daemon-reload
+        sudo systemctl enable --now snapd
         sudo systemctl start snapd
-        sudo systemctl enable snapd
         
-        # Wait for snapd to be ready
-        sleep 10
+        # Wait for snapd socket to be ready
+        sudo systemctl enable --now snapd.socket
+        sleep 15
         
-        # Install snapcraft via snap with retries
-        for i in {1..3}; do
+        # Create symbolic link for snap command
+        sudo ln -sf /var/lib/snapd/snap /snap || true
+        
+        # Install core snap first (required for classic snaps)
+        sudo snap install core
+        
+        # Install snapcraft with retries
+        for i in {1..5}; do
+          echo "Attempting to install snapcraft (attempt $i/5)..."
           if sudo snap install snapcraft --classic; then
             echo "✓ Snapcraft installed successfully"
             break
           else
-            echo "✗ Snapcraft installation attempt $i failed, retrying..."
-            sleep 5
+            echo "✗ Snapcraft installation attempt $i failed"
+            if [ $i -eq 5 ]; then
+              echo "All snapcraft installation attempts failed"
+              exit 1
+            fi
+            sleep 10
           fi
         done
         
@@ -86,7 +99,8 @@ jobs:
         sudo snap install multipass --classic || echo "Multipass installation failed, continuing without it"
         
         # Verify snapcraft installation
-        snapcraft --version || echo "Snapcraft verification failed"
+        snapcraft --version
+        echo "✓ Snapcraft verification successful"
 
     - name: Update snapcraft.yaml version
       run: |

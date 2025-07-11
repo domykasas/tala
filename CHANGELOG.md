@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.10] - 2025-07-11
+
+### Fixed
+- **Snapcraft Installation**: Fixed persistent snapcraft installation failures in GitHub Actions
+  - Removed apt-get attempt to install snapcraft (not available in Ubuntu repos)
+  - Improved snap daemon initialization with systemctl daemon-reload
+  - Added core snap installation (required for classic snaps)
+  - Enhanced snapd socket readiness with proper symbolic link creation
+  - Increased retry attempts from 3 to 5 with longer wait times
+  - Added squashfs-tools dependency for snap building
+  - Improved service startup sequence with proper systemctl commands
+
+### Enhanced
+- **Snap Build Reliability**: Significantly improved snap package build success rate with robust installation process
+
 ## [1.0.9] - 2025-07-11
 
 ### Fixed
