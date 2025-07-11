@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9] - 2025-07-11
+
+### Fixed
+- **GitHub Actions Permissions**: Fixed 403 release creation errors in GitHub Actions workflows
+  - Added `contents: write` permission to release.yml workflow
+  - Added `contents: write` permission to snapcraft.yml workflow
+  - Resolved GitHub token permission issues preventing release creation
+  - Enabled proper GitHub release automation for tagged versions
+
+### Enhanced
+- **Release Automation**: Improved workflow reliability for consistent release creation
+
 ## [1.0.8] - 2025-07-11
 
 ### Fixed

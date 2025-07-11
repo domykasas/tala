@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **UI Frameworks**: Simple terminal I/O (TUI), Fyne (GUI)  
 - **Architecture**: Modular internal packages (ai, config, fileops, tui, gui)
 - **Build Modes**: TUI (default), GUI
-- **Current Version**: 1.0.8
+- **Current Version**: 1.0.9
 
 ## Development Philosophy
 

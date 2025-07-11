@@ -12,6 +12,9 @@ on:
         required: true
         default: 'v1.0.0'
 
+permissions:
+  contents: write
+  
 env:
   GO_VERSION: '1.24.4'
 
