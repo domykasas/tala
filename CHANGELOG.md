@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2025-07-11
+
+### Added
+- **Dedicated Snap Workflow**: Added `.github/workflows/snapcraft.yml` following Shario's proven approach
+  - Multi-strategy fallback system: destructive mode → multipass → docker
+  - Comprehensive testing with local snap installation and version verification
+  - Automatic release attachment for snap packages
+  - Support for both tag pushes and manual dispatch triggers
+
+### Fixed
+- **Release Workflow Triggers**: Updated tag patterns to `v*.*.*` and `v*.*.*-*` for better compatibility
+- **Release Automation**: Fixed GitHub releases not appearing automatically for version tags
+
+### Enhanced
+- **Workflow Architecture**: Now includes comprehensive 3-workflow system (CI + Release + Snap)
+- **Documentation**: Updated CLAUDE.md with complete workflow architecture details
+
 ## [1.0.3] - 2025-07-11
 
 ### Fixed
