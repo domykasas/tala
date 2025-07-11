@@ -308,3 +308,22 @@ func CreateProvider(providerType, apiKey, model string, temperature float64, max
 		return nil, fmt.Errorf("unsupported provider: %s", providerType)
 	}
 }
+
+// CreateProviderFromConfig creates a provider from a Config struct
+func CreateProviderFromConfig(cfg interface{}) (Provider, error) {
+	// Use reflection or type assertion to extract config fields
+	// This is a helper function to maintain compatibility
+	type ConfigLike interface {
+		GetProvider() string
+		GetAPIKey() string
+		GetModel() string
+		GetTemperature() float64
+		GetMaxTokens() int
+	}
+	
+	if config, ok := cfg.(ConfigLike); ok {
+		return CreateProvider(config.GetProvider(), config.GetAPIKey(), config.GetModel(), config.GetTemperature(), config.GetMaxTokens())
+	}
+	
+	return nil, fmt.Errorf("invalid config type")
+}

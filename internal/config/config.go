@@ -16,6 +16,27 @@ type Config struct {
 	SystemPrompt string `json:"system_prompt"`
 }
 
+// Getter methods for provider creation
+func (c *Config) GetProvider() string {
+	return c.Provider
+}
+
+func (c *Config) GetAPIKey() string {
+	return c.APIKey
+}
+
+func (c *Config) GetModel() string {
+	return c.Model
+}
+
+func (c *Config) GetTemperature() float64 {
+	return c.Temperature
+}
+
+func (c *Config) GetMaxTokens() int {
+	return c.MaxTokens
+}
+
 func DefaultConfig() *Config {
 	return &Config{
 		Provider:     "ollama",

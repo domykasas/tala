@@ -1,5 +1,5 @@
-//go:build !gui
-// +build !gui
+//go:build gui
+// +build gui
 
 package main
 
@@ -9,9 +9,7 @@ import (
 	"os"
 
 	"tala/internal/config"
-	"tala/internal/tui"
-
-	tea "github.com/charmbracelet/bubbletea"
+	"tala/internal/gui"
 )
 
 func main() {
@@ -27,13 +25,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	model, err := tui.NewModel(cfg)
+	app, err := gui.NewApp(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	p := tea.NewProgram(model)
-	if _, err := p.Run(); err != nil {
-		log.Fatal(err)
-	}
+	app.Run()
 }

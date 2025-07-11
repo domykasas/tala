@@ -139,26 +139,38 @@ jobs:
         VERSION_NO_V=${VERSION#v}
         
         # Build for different platforms with version in filename
-        echo "Building for Linux (amd64)..."
+        echo "Building for Linux (amd64) - TUI..."
         GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-linux-amd64 .
         
-        echo "Building for Linux (arm64)..."
+        echo "Building for Linux (amd64) - GUI..."
+        GOOS=linux GOARCH=amd64 go build -tags gui -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-linux-amd64-gui . || echo "GUI build failed, skipping"
+        
+        echo "Building for Linux (arm64) - TUI..."
         GOOS=linux GOARCH=arm64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-linux-arm64 .
         
         echo "Building for FreeBSD (amd64)..."
         GOOS=freebsd GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-freebsd-x64 .
         
-        echo "Building for Windows (amd64)..."
+        echo "Building for Windows (amd64) - TUI..."
         GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-windows-x64.exe .
+        
+        echo "Building for Windows (amd64) - GUI..."
+        GOOS=windows GOARCH=amd64 go build -tags gui -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-windows-x64-gui.exe . || echo "GUI build failed, skipping"
         
         echo "Building for Windows (arm64)..."
         GOOS=windows GOARCH=arm64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-windows-arm64.exe .
         
-        echo "Building for macOS (amd64)..."
+        echo "Building for macOS (amd64) - TUI..."
         GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-macos-amd64 .
         
-        echo "Building for macOS (arm64)..."
+        echo "Building for macOS (amd64) - GUI..."
+        GOOS=darwin GOARCH=amd64 go build -tags gui -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-macos-amd64-gui . || echo "GUI build failed, skipping"
+        
+        echo "Building for macOS (arm64) - TUI..."
         GOOS=darwin GOARCH=arm64 go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-macos-arm64 .
+        
+        echo "Building for macOS (arm64) - GUI..."
+        GOOS=darwin GOARCH=arm64 go build -tags gui -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-macos-arm64-gui . || echo "GUI build failed, skipping"
 
     - name: Create Linux packages
       if: steps.release-type.outputs.manual_dispatch == 'false'
@@ -382,18 +394,20 @@ jobs:
           #### Linux
           | Format | Description | Download |
           |--------|-------------|----------|
-          | Binary | Standalone executable | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64` |
+          | Binary (TUI) | Terminal interface | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64` |
+          | Binary (GUI) | Graphical interface | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64-gui` |
           | DEB | Debian/Ubuntu package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64.deb` |
           | RPM | Red Hat/Fedora package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-x86_64.rpm` |
           | Snap | Universal Linux package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-amd64.snap` * |
           | AppImage | Portable Linux package | `tala-${{ steps.release-type.outputs.tag_name }}-linux-x86_64.AppImage` |
           | Archive | Compressed archive | `tala-${{ steps.release-type.outputs.tag_name }}-linux-x64.tar.xz` |
-          | ARM64 | ARM64 binary | `tala-${{ steps.release-type.outputs.tag_name }}-linux-arm64` |
+          | ARM64 (TUI) | ARM64 terminal | `tala-${{ steps.release-type.outputs.tag_name }}-linux-arm64` |
           
           #### Windows
           | Format | Description | Download |
           |--------|-------------|----------|
-          | Executable | Windows installer | `tala-${{ steps.release-type.outputs.tag_name }}-windows-x64.exe` |
+          | Executable (TUI) | Terminal interface | `tala-${{ steps.release-type.outputs.tag_name }}-windows-x64.exe` |
+          | Executable (GUI) | Graphical interface | `tala-${{ steps.release-type.outputs.tag_name }}-windows-x64-gui.exe` |
           | Squirrel | Auto-updater package | `tala-${{ steps.release-type.outputs.tag_name }}-squirrel.zip` |
           | ARM64 | ARM64 executable | `tala-${{ steps.release-type.outputs.tag_name }}-windows-arm64.exe` |
           
@@ -401,13 +415,15 @@ jobs:
           | Format | Description | Download |
           |--------|-------------|----------|
           | DMG | macOS disk image | `tala-${{ steps.release-type.outputs.tag_name }}-macos.dmg` |
-          | Intel | Intel binary | `tala-${{ steps.release-type.outputs.tag_name }}-macos-amd64` |
-          | Apple Silicon | ARM64 binary | `tala-${{ steps.release-type.outputs.tag_name }}-macos-arm64` |
+          | Intel (TUI) | Intel terminal | `tala-${{ steps.release-type.outputs.tag_name }}-macos-amd64` |
+          | Intel (GUI) | Intel graphical | `tala-${{ steps.release-type.outputs.tag_name }}-macos-amd64-gui` |
+          | Apple Silicon (TUI) | ARM64 terminal | `tala-${{ steps.release-type.outputs.tag_name }}-macos-arm64` |
+          | Apple Silicon (GUI) | ARM64 graphical | `tala-${{ steps.release-type.outputs.tag_name }}-macos-arm64-gui` |
           
           #### FreeBSD
           | Format | Description | Download |
           |--------|-------------|----------|
-          | Binary | FreeBSD executable | `tala-${{ steps.release-type.outputs.tag_name }}-freebsd-x64` |
+          | Binary (TUI) | Terminal interface | `tala-${{ steps.release-type.outputs.tag_name }}-freebsd-x64` |
           
           ### Installation
           

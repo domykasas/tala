@@ -1,8 +1,55 @@
-# CLAUDE.md
+# CLAUDE.md - Project Memory
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Tala is a terminal-based AI language assistant built with Go and Bubble Tea. It provides an interactive interface for communicating with various AI providers including OpenAI, Anthropic, and Ollama.
+## Project Overview
+**Tala** - Terminal-based AI language assistant with multiple interface modes
+- **Language**: Go 1.24.4+
+- **UI Frameworks**: Bubble Tea (TUI), Fyne (GUI)
+- **Architecture**: Modular internal packages (ai, config, fileops, tui, gui)
+- **Build Modes**: TUI (default), GUI
+- **Current Version**: 1.0.1
+
+## Development Philosophy
+
+### Communication Principles
+- **Direct and Concise**: Provide specific technical context without unnecessary explanations
+- **Problem-Focused**: Understand root causes systematically before implementing solutions
+- **Minimal Changes**: Make targeted, minimal modifications to achieve goals
+- **Documentation-First**: Always update documentation after modifications
+
+### Version Management
+- **Semantic Versioning**: MAJOR.MINOR.PATCH (breaking.feature.bugfix)
+- **Consistent References**: Update version badges in README.md and documentation
+- **Changelog Maintenance**: Document all changes following Keep a Changelog format
+
+## Version Increment Rules
+
+**Every commit must include a version bump, no exceptions**
+
+### Version Increment Triggers:
+1. **Documentation changes**: PATCH version (1.0.3 → 1.0.4)
+2. **Bug fixes**: PATCH version (1.0.3 → 1.0.4)
+3. **New features**: MINOR version (1.0.3 → 1.1.0)
+4. **Breaking changes**: MAJOR version (1.0.3 → 2.0.0)
+
+### Version Number Format:
+- **Pre-release**: "v1.0.0-rc.N" (testing versions)
+- **Stable release**: "v1.0.0" (production releases)
+- **Always includes 'v' prefix**
+
+### Documentation Requirements:
+Files to update for every version bump:
+1. **CLAUDE.md** - Update current version references
+2. **README.md** - Update version badge and status section
+3. **CHANGELOG.md** - Add new version section with changes
+4. **Git tag**: `git tag v1.0.X`
+
+### Key Principles:
+- **Proactive versioning**: Increment versions with every meaningful change
+- **Manual control**: Human controls git push operations
+- **Documentation consistency**: Maintain version alignment across all files
+- **Clear categorization**: Properly classify changes as breaking, feature, or fix
 
 ## Prerequisites
 
@@ -21,15 +68,15 @@ go test ./...
 go test ./... -v
 
 # Run specific package tests
-go test ./config -v
-go test ./ai -v
-go test ./fileops -v
+go test ./internal/config -v
+go test ./internal/ai -v
+go test ./internal/fileops -v
 
 # Run tests with coverage
 go test ./... -cover
 
 # Run specific test function
-go test ./ai -run TestOllamaProvider
+go test ./internal/ai -run TestOllamaProvider
 
 # Run tests with race detection
 go test -race ./...
@@ -40,10 +87,16 @@ go test -timeout=30s ./...
 
 ### Building
 ```bash
+# Build TUI version (default)
 go build -o tala
+
+# Build GUI version
+go build -tags gui -o tala-gui
 ```
 
 **Note**: When helping with Tala development, do not build the application or delete the `tala` binary file. The user will build it themselves.
+
+**🚨 CRITICAL**: Always use `go test ./...` for compilation verification, never `go build` unless explicitly requested by the user.
 
 **Important**: Always remember to update ROADMAP.md when making significant changes or releases. The roadmap should reflect current development status and future plans.
 
@@ -52,6 +105,41 @@ go build -o tala
 **Change Documentation**: After making any significant file updates, bug fixes, or feature additions, always update CHANGELOG.md with the changes following the Keep a Changelog format. This ensures proper version history tracking.
 
 **Commit Messages**: Do not include Claude Code attribution or co-authorship lines in commit messages. Keep commits clean and professional without AI assistant signatures.
+
+## Bug Tracking and Resolution
+
+### Issue Analysis Process
+1. **Systematic Diagnosis**: Carefully analyze error messages and symptoms
+2. **Root Cause Investigation**: Understand underlying causes before implementing fixes
+3. **Targeted Solutions**: Implement minimal, focused changes that address specific issues
+4. **Comprehensive Testing**: Verify fixes across different platforms and scenarios
+5. **Documentation Updates**: Record solutions and architectural decisions
+
+### Testing Strategy
+- **Priority**: Always use `go test ./...` instead of `go build` for validation
+- **Cross-Platform**: Test compilation and functionality across supported environments
+- **Systematic Coverage**: Use structured test approaches with race detection and timeouts
+- **Regression Prevention**: Maintain comprehensive test coverage for fixed issues
+
+## 🚨 Critical Build Testing Rule
+
+**NEVER USE `go build` - Use `go test ./...` instead**
+
+### Why This Matters:
+- **Repository Size**: Executables are large (5-30MB) and bloat git repository
+- **Compilation Verification**: `go test ./...` verifies code compiles correctly without generating files
+- **User Preference**: Respects user preference for handling builds independently
+- **Professional Practice**: Standard workflow for code verification
+
+### Exceptions:
+- **User Request**: Only build when explicitly requested by the user
+- **Release Process**: Automated CI/CD builds for distribution
+- **Debugging**: Specific troubleshooting scenarios where binary is needed
+
+### Standard Workflow:
+1. **Always**: `go test ./...` for compilation and functionality verification
+2. **Only if requested**: `go build` for specific binary creation
+3. **Never**: Proactive building without user request
 
 **Release Workflows**: The project uses a dual-workflow architecture for optimal release management:
 
@@ -106,23 +194,27 @@ export DEBUG=1
 
 ```
 tala/
-├── main.go              # Application entry point
-├── config/              # Configuration management
-│   ├── config.go        # Config struct and file operations
-│   └── config_test.go   # Configuration tests
-├── ai/                  # AI provider implementations
-│   ├── provider.go      # Provider interface and implementations
-│   ├── provider_test.go # Provider tests
-│   ├── intent.go        # AI-powered intent detection
-│   ├── tools.go         # File operation tools for AI
-│   └── tools_test.go    # AI tools tests
-├── fileops/             # File system operations
-│   ├── fileops.go       # File and directory CRUD operations
-│   ├── commands.go      # Command parsing and execution
-│   ├── fileops_test.go  # File operations tests
-│   └── commands_test.go # Command tests
-├── tui/                 # Terminal UI components
-│   └── model.go         # Bubble Tea model implementation
+├── main.go              # TUI application entry point
+├── main_gui.go          # GUI application entry point  
+├── internal/            # Internal packages
+│   ├── config/          # Configuration management
+│   │   ├── config.go    # Config struct and file operations
+│   │   └── config_test.go # Configuration tests
+│   ├── ai/              # AI provider implementations
+│   │   ├── provider.go  # Provider interface and implementations
+│   │   ├── provider_test.go # Provider tests
+│   │   ├── intent.go    # AI-powered intent detection
+│   │   ├── tools.go     # File operation tools for AI
+│   │   └── tools_test.go # AI tools tests
+│   ├── fileops/         # File system operations
+│   │   ├── fileops.go   # File and directory CRUD operations
+│   │   ├── commands.go  # Command parsing and execution
+│   │   ├── fileops_test.go # File operations tests
+│   │   └── commands_test.go # Command tests
+│   ├── tui/             # Terminal UI components
+│   │   └── model.go     # Bubble Tea model implementation
+│   └── gui/             # GUI components
+│       └── app.go       # Fyne GUI application
 ├── go.mod              # Go module file
 ├── go.sum              # Go module checksums
 ├── README.md           # Main documentation
@@ -152,10 +244,26 @@ The application validates:
 ## Architecture Overview
 
 ### Core Components
-- **main.go**: Entry point that initializes config and starts the TUI
-- **config/**: Configuration management with JSON file at `~/.config/tala/config.json`
-- **ai/**: Provider interface pattern supporting OpenAI, Anthropic, and Ollama
-- **tui/**: Bubble Tea-based terminal interface with no alt-screen mode for copy-paste functionality
+- **main.go**: TUI entry point that initializes config and starts Bubble Tea interface
+- **main_gui.go**: GUI entry point for Fyne-based graphical interface
+- **internal/config/**: Configuration management with JSON file at `~/.config/tala/config.json`
+- **internal/ai/**: Provider interface pattern supporting OpenAI, Anthropic, and Ollama
+- **internal/tui/**: Bubble Tea-based terminal interface with no alt-screen mode for copy-paste functionality
+- **internal/gui/**: Fyne-based graphical interface with chat window and settings dialog
+- **internal/fileops/**: File system operations with command parsing and AI tool integration
+
+### Architecture Patterns
+
+#### Build Constraint System
+- **TUI Mode**: `//go:build !gui` - Default terminal interface (Bubble Tea)
+- **GUI Mode**: `//go:build gui` - Graphical interface using Fyne framework
+- **Conditional Compilation**: Allows platform-specific builds and deployment flexibility
+- **Provider Compatibility**: Both modes support the same AI provider interface
+
+#### Event-Driven Architecture
+- **Provider Interface**: Pluggable AI providers with consistent API
+- **Tool Integration**: AI-powered file operations and system commands
+- **Multi-Modal Support**: Seamless switching between TUI, GUI, and headless modes
 
 ### Provider System
 The `ai.Provider` interface allows pluggable AI providers:
@@ -293,6 +401,22 @@ User Input → Starts with '/'? → YES → Direct Command Execution
    go build -o tala
    ```
 
+5. **GUI build failures**
+   ```bash
+   # Install GUI dependencies (platform-specific)
+   # Linux: sudo apt-get install libgl1-mesa-dev xorg-dev
+   # macOS: No additional dependencies needed
+   # Windows: No additional dependencies needed
+   go build -tags gui -o tala-gui
+   ```
+
+### Debugging Workflow
+1. **Error Analysis**: Examine error messages for specific technical details
+2. **Minimal Reproduction**: Create minimal test cases to isolate issues
+3. **Systematic Testing**: Use `go test ./...` with race detection and timeouts
+4. **Cross-Platform Verification**: Test fixes across supported platforms
+5. **Documentation Updates**: Record solutions and architectural decisions
+
 ### Debug Mode
 Set `DEBUG=1` environment variable for verbose logging:
 ```bash
@@ -423,25 +547,46 @@ Backspace           - Delete characters from input
 ```bash
 # Development
 go mod tidy              # Update dependencies
-go test ./...           # Run all tests
+go test ./...           # Run all tests (preferred over go build)
 go test ./... -cover    # Run tests with coverage
-go build -o tala        # Build binary
-go clean                # Clean build artifacts
+go test -race ./...     # Run tests with race detection
+go test -timeout=30s ./... # Run tests with timeout
+
+# Building
+go build -o tala              # Build TUI version
+go build -tags gui -o tala-gui     # Build GUI version
+go clean                     # Clean build artifacts
 
 # Configuration
 ~/.config/tala/config.json  # Config file location
 
 # Running
-./tala                  # Start Tala
+./tala                  # Start Tala (TUI)
+./tala-gui             # Start GUI version
 export DEBUG=1          # Enable debug mode
 DEBUG=1 ./tala          # Debug mode inline
 ```
 
+## Release Management
+
+### Asset Naming Convention
+- **TUI**: `tala-vX.X.X-platform-arch`
+- **GUI**: `tala-vX.X.X-platform-arch-gui`
+- **Packages**: Platform-specific formats (DEB, RPM, DMG, etc.)
+
+### Build Matrix
+- **Platforms**: Linux, Windows, macOS, FreeBSD
+- **Architectures**: amd64, arm64
+- **Modes**: TUI (default), GUI
+- **Package Formats**: Binary, DEB, RPM, Snap, AppImage, DMG
+
 ### Key Files
-- `main.go` - Application entry point
-- `config/config.go` - Configuration management
-- `ai/provider.go` - AI provider implementations
-- `tui/model.go` - Terminal UI logic
+- `main.go` - TUI application entry point
+- `main_gui.go` - GUI application entry point
+- `internal/config/config.go` - Configuration management
+- `internal/ai/provider.go` - AI provider implementations
+- `internal/tui/model.go` - Terminal UI logic
+- `internal/gui/app.go` - Fyne GUI implementation
 
 ### Important Environment Variables
 - `DEBUG=1` - Enable debug logging

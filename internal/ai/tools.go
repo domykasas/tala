@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-	"tala/fileops"
+	"tala/internal/fileops"
 	"time"
 )
 

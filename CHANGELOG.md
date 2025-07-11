@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-07-11
+
+### Added
+- **Multi-Mode Architecture**: Implemented Shario-inspired best practices
+  - TUI Mode: Default terminal interface using Bubble Tea
+  - GUI Mode: Graphical interface using Fyne framework
+  - Build constraints for conditional compilation
+- **Enhanced Project Structure**: Reorganized codebase following Go best practices
+  - Moved packages to `/internal/` directory
+  - Clean separation between UI layers and core logic
+  - Provider interface abstraction for AI backends
+- **Comprehensive Build System**: Updated GitHub Actions workflow
+  - Cross-platform builds for TUI and GUI modes
+  - Streamlined asset naming convention
+  - Removed redundant headless mode
+- **Documentation Improvements**: Enhanced CLAUDE.md with
+  - Development philosophy and communication principles
+  - Version management rules and increment triggers
+  - Critical build testing rule (go test vs go build)
+  - Bug tracking and debugging workflows
+  - Release management best practices
+
+### Changed
+- **Build Constraints**: Updated from `!headless && !gui` to `!gui` for TUI mode
+- **Architecture**: Unified provider system across all interface modes
+- **Dependencies**: Added Fyne v2.4.5 for GUI functionality
+
+### Removed
+- **Headless Mode**: Eliminated redundant headless executable
+  - No unique functionality beyond TUI mode
+  - Reduced build complexity and asset duplication
+  - Simplified deployment options
+
+### Fixed
+- **Import Paths**: Corrected all imports to use internal package structure
+- **Provider Interface**: Added backward compatibility for config-based provider creation
+- **Build System**: Resolved build constraint conflicts between modes
+
 ## [1.0.0] - 2025-07-08
 
 ### Added

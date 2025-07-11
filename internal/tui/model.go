@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"tala/ai"
-	"tala/config"
-	"tala/fileops"
+	"tala/internal/ai"
+	"tala/internal/config"
+	"tala/internal/fileops"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
