@@ -207,6 +207,7 @@ jobs:
         hdiutil create -volname "Tala" -srcfolder dist -ov -format UDZO tala-${{ matrix.name }}.dmg
 
     - name: Create checksums
+      shell: bash
       run: |
         # Create checksums for all artifacts
         echo "Creating checksums for ${{ matrix.name }} on ${{ matrix.goos }}..."

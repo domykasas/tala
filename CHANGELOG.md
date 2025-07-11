@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.12] - 2025-07-11
+
+### Fixed
+- **Windows Build**: Fixed PowerShell syntax error in GitHub Actions Windows build workflow
+  - Added explicit `shell: bash` directive to checksum generation step
+  - Resolved PowerShell vs Bash syntax incompatibility on Windows runners
+  - Fixed "Missing '(' after 'if' in if statement" error in Windows environment
+  - Ensured cross-platform compatibility for all shell commands
+
+### Enhanced
+- **Cross-Platform Build**: Improved workflow reliability across all supported platforms (Linux, Windows, macOS)
+
 ## [1.0.11] - 2025-07-11
 
 ### Fixed
