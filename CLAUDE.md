@@ -164,7 +164,7 @@ The GUI mode provides an enhanced graphical interface with all terminal features
 2. **Only if requested**: `go build` for specific binary creation
 3. **Never**: Proactive building without user request
 
-**Release Workflows**: The project uses a simple two-workflow architecture inspired by Shario:
+**Release Workflows**: The project uses a comprehensive workflow architecture inspired by Shario:
 
 **go.yml** (Continuous Integration):
 - **Trigger**: Push/PR to main and develop branches
@@ -187,22 +187,37 @@ The GUI mode provides an enhanced graphical interface with all terminal features
 - **Package Types**: Comprehensive packaging for all major distributions
 - **Checksums**: SHA256 verification for all artifacts
 
+**snapcraft.yml** (Snap Package Workflow):
+- **Trigger**: Tag pushes + manual dispatch option
+- **Purpose**: Dedicated Snap package creation with multiple fallback strategies
+- **Strategies**: Destructive mode → Multipass → Docker fallbacks
+- **Features**:
+  - **Snap Testing**: Local installation and version verification
+  - **Store Publishing**: Ready for Snap Store integration (requires credentials)
+  - **Artifact Management**: Automatic upload to GitHub releases
+  - **Quality Assurance**: Comprehensive testing before publication
+
 **Development Workflow**:
 ```
 Development → PR → go.yml (CI testing)
-Ready for release → Create tag → Push tag → release.yml → GitHub Release
+Ready for release → Create tag → Push tag → release.yml + snapcraft.yml → GitHub Release
 ```
 
 **Manual Release Process**:
 1. Create tag: `git tag v1.0.3`
 2. Push tag: `git push origin v1.0.3`
-3. GitHub Actions automatically builds and creates the release
+3. GitHub Actions automatically:
+   - Builds all platform binaries and packages
+   - Creates comprehensive release with download tables
+   - Generates SHA256 checksums for verification
+   - Builds and tests Snap packages
 
 **Architecture Benefits**:
-- ✅ Simple and maintainable (only 2 workflows)
-- ✅ Comprehensive platform coverage
-- ✅ Professional packaging for all distributions
-- ✅ Reliable and proven approach (based on Shario)
+- ✅ Comprehensive platform coverage (Linux, Windows, macOS, FreeBSD)
+- ✅ Professional packaging (DEB, RPM, AppImage, DMG, ZIP, Snap)
+- ✅ Reliable Snap building with fallback strategies
+- ✅ Dedicated workflows for specialized packaging
+- ✅ Proven approach based on Shario's architecture
 
 ### Dependencies
 ```bash

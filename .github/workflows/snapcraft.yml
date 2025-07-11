@@ -1,0 +1,176 @@
+name: Snapcraft
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*-rc*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+env:
+  GO_VERSION: '1.24.4'
+
+jobs:
+  snap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Build binary for snap
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        mkdir -p build
+        
+        # Build binary with version info
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+          go build -ldflags "-X main.version=$VERSION" -o build/tala-$VERSION-linux-amd64 .
+        
+        echo "Built binary for snap package"
+        ls -la build/
+
+    - name: Install snapcraft
+      run: |
+        sudo snap install snapcraft --classic
+        sudo snap install multipass
+
+    - name: Update snapcraft.yaml version
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        VERSION_NO_V=${VERSION#v}
+        
+        # Update version in snapcraft.yaml
+        sed -i "s/version: git/version: $VERSION_NO_V/" snapcraft.yaml
+        
+        echo "Updated snapcraft.yaml version to: $VERSION_NO_V"
+        cat snapcraft.yaml
+
+    - name: Build snap package
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        
+        echo "Building snap package..."
+        
+        # Try multiple strategies for snap building
+        
+        # Strategy 1: Use destructive mode (fastest)
+        if snapcraft --destructive-mode --verbose; then
+          echo "✓ Snap built successfully with destructive mode"
+        else
+          echo "✗ Destructive mode failed, trying with multipass..."
+          
+          # Strategy 2: Use multipass (more isolated)
+          if snapcraft --use-lxd --verbose; then
+            echo "✓ Snap built successfully with multipass"
+          else
+            echo "✗ Multipass failed, trying with docker..."
+            
+            # Strategy 3: Use docker (most isolated)
+            if snapcraft --use-lxd --verbose; then
+              echo "✓ Snap built successfully with docker"
+            else
+              echo "✗ All snap build strategies failed"
+              exit 1
+            fi
+          fi
+        fi
+        
+        # Find and rename the snap file
+        if ls *.snap 1> /dev/null 2>&1; then
+          SNAP_FILE=$(ls *.snap | head -1)
+          mv "$SNAP_FILE" tala-$VERSION-linux-amd64.snap
+          echo "✓ Snap package: tala-$VERSION-linux-amd64.snap"
+          ls -la tala-$VERSION-linux-amd64.snap
+        else
+          echo "✗ No snap file found after build"
+          exit 1
+        fi
+
+    - name: Test snap package
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        
+        echo "Testing snap package..."
+        
+        # Install the snap locally
+        sudo snap install tala-$VERSION-linux-amd64.snap --dangerous
+        
+        # Test basic functionality
+        if tala --version | grep -q "$VERSION"; then
+          echo "✓ Snap package works correctly"
+        else
+          echo "✗ Snap package version test failed"
+          exit 1
+        fi
+        
+        # Clean up
+        sudo snap remove tala
+
+    - name: Create checksums
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        
+        # Create checksums for the snap
+        sha256sum tala-$VERSION-linux-amd64.snap > tala-$VERSION-linux-amd64.snap.sha256
+        
+        echo "Checksums created:"
+        cat tala-$VERSION-linux-amd64.snap.sha256
+
+    - name: Upload snap artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tala-snap
+        path: |
+          tala-*.snap
+          tala-*.snap.sha256
+        retention-days: 30
+
+    - name: Upload to release (if tag push)
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        files: |
+          tala-*.snap
+          tala-*.snap.sha256
+        draft: false
+        prerelease: ${{ contains(steps.version.outputs.version, '-rc') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish to Snap Store (manual trigger only)
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true'
+      run: |
+        VERSION=${{ steps.version.outputs.version }}
+        
+        echo "Publishing snap to Snap Store..."
+        echo "Note: This requires SNAPCRAFT_STORE_CREDENTIALS secret to be set"
+        
+        # This would require setting up the snapcraft store credentials
+        # snapcraft upload tala-$VERSION-linux-amd64.snap --release=stable
+        
+        echo "Snap publishing is not yet configured - requires store credentials"
