@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2025-07-11
+
+### Fixed
+- **Staticcheck Error**: Removed unused `currentTokens` field from SimpleTUI struct
+- **Workflow Simplification**: Replaced complex 4-workflow system with Shario's proven 2-workflow approach
+  - Simplified CI/CD maintenance with go.yml (CI) and release.yml (releases)
+  - Removed unnecessary pre-release.yml and snapcraft.yml workflows
+  - Enhanced build matrix for comprehensive multi-platform support
+  - Proper CGO handling for GUI builds with platform-specific dependencies
+
+### Enhanced
+- **GUI Build System**: Fixed build constraints and CGO dependencies for proper GUI compilation
+- **Workflow Reliability**: Adopted Shario's proven approach for better build success rates
+- **Documentation**: Updated CLAUDE.md with simplified workflow architecture
+
 ### Added
 - **Comprehensive Release System**: Complete multi-platform packaging inspired by Shario
   - **Cross-Platform Builds**: Linux (amd64/arm64), Windows (amd64/arm64), macOS (Intel/Apple Silicon), FreeBSD (amd64)

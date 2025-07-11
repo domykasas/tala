@@ -53,7 +53,6 @@ type SimpleTUI struct {
 	totalTokens   int
 	totalRequests int
 	totalTime     time.Duration
-	currentTokens int // Track tokens for current response
 }
 
 // NewSimpleTUI creates a new simple TUI instance
