@@ -3,18 +3,13 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
-      - 'v*.*.*-rc*'
-  workflow_dispatch:
+      - 'v*'
 
 env:
   GO_VERSION: '1.24.4'
 
-permissions:
-  contents: write
-
 jobs:
-  build:
+  release:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -57,7 +52,7 @@ jobs:
             name: macos-arm64
             packages: false
           
-          # FreeBSD builds
+          # FreeBSD build
           - os: ubuntu-latest
             goos: freebsd
             goarch: amd64
@@ -77,268 +72,163 @@ jobs:
         cache: true
 
     - name: Install Linux dependencies
-      if: matrix.os == 'ubuntu-latest' && matrix.packages
+      if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y alien rpm genisoimage imagemagick zip wget
-        sudo snap install snapcraft --classic
+        sudo apt-get install -y gcc pkg-config libgl1-mesa-dev libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxxf86vm-dev libasound2-dev
 
     - name: Install macOS dependencies
       if: matrix.os == 'macos-latest'
       run: |
-        brew install create-dmg
+        xcode-select --version || xcode-select --install || true
 
     - name: Get version
       id: version
       run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          echo "version=dev-$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
-        else
-          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        fi
+        echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        echo "version_no_v=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-    - name: Build binary
+    - name: Build TUI binary
+      env:
+        CGO_ENABLED: 0
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
       run: |
-        mkdir -p build
         VERSION=${{ steps.version.outputs.version }}
-        
-        # Set binary name based on platform
         if [ "${{ matrix.goos }}" = "windows" ]; then
-          BINARY_NAME="tala-$VERSION-${{ matrix.name }}.exe"
+          go build -ldflags "-X main.version=$VERSION" -o tala-${{ matrix.name }}.exe .
         else
-          BINARY_NAME="tala-$VERSION-${{ matrix.name }}"
+          go build -ldflags "-X main.version=$VERSION" -o tala-${{ matrix.name }} .
         fi
-        
-        # Build with version info
-        env GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=0 \
-          go build -ldflags "-X main.version=$VERSION" -o build/$BINARY_NAME .
-        
-        echo "Built: $BINARY_NAME"
-        ls -la build/
 
-    - name: Build GUI variant
-      if: matrix.packages && matrix.goos != 'freebsd'
+    - name: Build GUI binary
+      if: matrix.goos != 'freebsd'
+      env:
+        CGO_ENABLED: 1
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
       run: |
         VERSION=${{ steps.version.outputs.version }}
-        
-        # Set GUI binary name based on platform
         if [ "${{ matrix.goos }}" = "windows" ]; then
-          BINARY_NAME="tala-$VERSION-${{ matrix.name }}-gui.exe"
+          go build -tags gui -ldflags "-X main.version=$VERSION" -o tala-gui-${{ matrix.name }}.exe . || echo "GUI build failed for ${{ matrix.name }}"
         else
-          BINARY_NAME="tala-$VERSION-${{ matrix.name }}-gui"
+          go build -tags gui -ldflags "-X main.version=$VERSION" -o tala-gui-${{ matrix.name }} . || echo "GUI build failed for ${{ matrix.name }}"
         fi
-        
-        # Build GUI variant
-        env GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} CGO_ENABLED=0 \
-          go build -tags gui -ldflags "-X main.version=$VERSION" -o build/$BINARY_NAME . || \
-          echo "GUI build failed for ${{ matrix.name }}, continuing with TUI only"
 
-    - name: Create Linux packages
-      if: matrix.os == 'ubuntu-latest' && matrix.packages && matrix.goos == 'linux'
+    - name: Create packages (Linux)
+      if: matrix.packages && matrix.goos == 'linux'
       run: |
-        VERSION=${{ steps.version.outputs.version }}
-        VERSION_NO_V=${VERSION#v}
+        VERSION=${{ steps.version.outputs.version_no_v }}
+        
+        # Install packaging tools
+        sudo apt-get install -y snapcraft
+        go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
         
         # Create directories
-        mkdir -p pkg dist
+        mkdir -p dist pkg
         
-        # Create tar.xz archive
-        echo "Creating tar.xz archive..."
-        mkdir -p pkg/tala-$VERSION_NO_V
-        cp build/tala-$VERSION-${{ matrix.name }} pkg/tala-$VERSION_NO_V/tala
-        cp README.md CHANGELOG.md pkg/tala-$VERSION_NO_V/
-        tar -C pkg -cJf build/tala-$VERSION-linux-x64.tar.xz tala-$VERSION_NO_V
+        # Copy binaries
+        cp tala-${{ matrix.name }} dist/
+        cp tala-gui-${{ matrix.name }} dist/ || echo "No GUI binary"
         
         # Create DEB package
-        echo "Creating DEB package..."
-        mkdir -p pkg/deb/usr/local/bin
-        mkdir -p pkg/deb/usr/share/doc/tala
-        mkdir -p pkg/deb/DEBIAN
-        
-        cp build/tala-$VERSION-${{ matrix.name }} pkg/deb/usr/local/bin/tala
-        chmod +x pkg/deb/usr/local/bin/tala
-        cp README.md CHANGELOG.md pkg/deb/usr/share/doc/tala/
-        
-        # Create control file
-        cat > pkg/deb/DEBIAN/control << EOF
-        Package: tala
-        Version: $VERSION_NO_V
-        Section: utils
-        Priority: optional
-        Architecture: amd64
-        Maintainer: Tala Team <noreply@github.com>
-        Description: Terminal AI Language Assistant
-         Tala is a terminal-based AI language assistant built with Go.
-         It provides an interactive interface for communicating with various AI providers.
+        cat > nfpm.yaml << 'EOF'
+        name: tala
+        arch: ${{ matrix.goarch }}
+        platform: linux
+        version: ${{ steps.version.outputs.version_no_v }}
+        maintainer: "Tala Team"
+        description: "Terminal AI Language Assistant"
+        homepage: "https://github.com/domykasas/tala"
+        license: "MIT"
+        contents:
+          - src: dist/tala-${{ matrix.name }}
+            dst: /usr/bin/tala
+            file_info:
+              mode: 0755
+          - src: dist/tala-gui-${{ matrix.name }}
+            dst: /usr/bin/tala-gui
+            file_info:
+              mode: 0755
         EOF
         
-        dpkg-deb --build pkg/deb build/tala-$VERSION-linux-amd64.deb
+        # Build DEB
+        nfpm package --packager deb --target pkg/
         
-        # Create RPM package
-        echo "Creating RPM package..."
-        cd build
-        alien -r -c tala-$VERSION-linux-amd64.deb || echo "RPM creation failed"
-        if ls tala-*.rpm 1> /dev/null 2>&1; then
-          mv tala-*.rpm tala-$VERSION-linux-x86_64.rpm
-        fi
-        cd ..
+        # Build RPM
+        nfpm package --packager rpm --target pkg/
         
-        # Create AppImage
-        echo "Creating AppImage..."
-        wget -O appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-        chmod +x appimagetool
+        # Create AppImage (basic)
+        mkdir -p AppDir/usr/bin
+        cp dist/tala-${{ matrix.name }} AppDir/usr/bin/tala
+        cp dist/tala-gui-${{ matrix.name }} AppDir/usr/bin/tala-gui || echo "No GUI for AppImage"
         
-        mkdir -p pkg/appdir/usr/bin
-        mkdir -p pkg/appdir/usr/share/applications
-        mkdir -p pkg/appdir/usr/share/icons/hicolor/256x256/apps
+        # Download AppImage tools
+        wget -O appimagetool-x86_64.AppImage https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+        chmod +x appimagetool-x86_64.AppImage
         
-        cp build/tala-$VERSION-${{ matrix.name }} pkg/appdir/usr/bin/tala
-        chmod +x pkg/appdir/usr/bin/tala
-        
-        # Create desktop file
-        cat > pkg/appdir/usr/share/applications/tala.desktop << EOF
+        # Create AppImage desktop file
+        cat > AppDir/tala.desktop << 'EOF'
         [Desktop Entry]
-        Type=Application
         Name=Tala
-        Comment=Terminal AI Language Assistant
         Exec=tala
         Icon=tala
+        Type=Application
         Categories=Utility;
-        Terminal=true
         EOF
         
-        # Create icon
-        convert -size 256x256 xc:blue -gravity center -pointsize 72 -fill white -annotate +0+0 "T" pkg/appdir/usr/share/icons/hicolor/256x256/apps/tala.png || echo "Icon creation failed"
-        
-        cp pkg/appdir/usr/share/applications/tala.desktop pkg/appdir/
-        cp pkg/appdir/usr/share/icons/hicolor/256x256/apps/tala.png pkg/appdir/ 2>/dev/null || touch pkg/appdir/tala.png
-        
-        ./appimagetool pkg/appdir build/tala-$VERSION-linux-x86_64.AppImage || echo "AppImage creation failed"
+        # Create AppImage
+        ./appimagetool-x86_64.AppImage AppDir tala-${{ matrix.name }}.AppImage --no-appstream || echo "AppImage creation failed"
 
-    - name: Create Snap package
-      if: matrix.os == 'ubuntu-latest' && matrix.packages && matrix.goos == 'linux'
+    - name: Create packages (Windows)
+      if: matrix.packages && matrix.goos == 'windows'
       run: |
-        VERSION=${{ steps.version.outputs.version }}
-        VERSION_NO_V=${VERSION#v}
-        
-        echo "Creating Snap package..."
-        # Update snapcraft.yaml with current version
-        sed -i "s/version: git/version: $VERSION_NO_V/" snapcraft.yaml
-        
-        # Build snap with fallback handling
-        if snapcraft --destructive-mode --verbose; then
-          if ls *.snap 1> /dev/null 2>&1; then
-            mv *.snap build/tala-$VERSION-linux-amd64.snap
-            echo "✓ Snap package created successfully"
-          else
-            echo "✗ Snap files not found after build"
-            touch build/tala-$VERSION-linux-amd64.snap.failed
-          fi
+        # Create zip archive
+        if [ -f "tala-gui-${{ matrix.name }}.exe" ]; then
+          7z a tala-${{ matrix.name }}.zip tala-${{ matrix.name }}.exe tala-gui-${{ matrix.name }}.exe
         else
-          echo "✗ Snap creation failed - creating placeholder"
-          touch build/tala-$VERSION-linux-amd64.snap.failed
+          7z a tala-${{ matrix.name }}.zip tala-${{ matrix.name }}.exe
         fi
-
-    - name: Create Windows packages
-      if: matrix.os == 'windows-latest' && matrix.packages
-      run: |
-        VERSION=${{ steps.version.outputs.version }}
-        
-        # Create Windows installer package
-        echo "Creating Windows packages..."
-        mkdir -p pkg/windows
-        cp build/tala-$VERSION-${{ matrix.name }}.exe pkg/windows/
-        if [ -f build/tala-$VERSION-${{ matrix.name }}-gui.exe ]; then
-          cp build/tala-$VERSION-${{ matrix.name }}-gui.exe pkg/windows/
-        fi
-        cp README.md CHANGELOG.md pkg/windows/
-        
-        # Create Squirrel.Windows compatible zip
-        cd pkg/windows
-        zip -r ../../build/tala-$VERSION-squirrel.zip .
-        cd ../..
-        
-        # Create checksums
-        certutil -hashfile build/tala-$VERSION-${{ matrix.name }}.exe SHA256 > build/tala-$VERSION-${{ matrix.name }}.exe.blockmap
-        certutil -hashfile build/tala-$VERSION-squirrel.zip SHA256 > build/tala-$VERSION-squirrel.zip.blockmap
       shell: bash
 
-    - name: Create macOS packages
-      if: matrix.os == 'macos-latest' && matrix.packages
+    - name: Create packages (macOS)
+      if: matrix.packages && matrix.goos == 'darwin'
       run: |
-        VERSION=${{ steps.version.outputs.version }}
-        
-        # Create macOS app bundle
-        echo "Creating macOS DMG..."
-        mkdir -p pkg/macos/Tala.app/Contents/MacOS
-        mkdir -p pkg/macos/Tala.app/Contents/Resources
-        
-        # Create Info.plist
-        cat > pkg/macos/Tala.app/Contents/Info.plist << EOF
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>CFBundleExecutable</key>
-            <string>tala</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.github.domykasas.tala</string>
-            <key>CFBundleName</key>
-            <string>Tala</string>
-            <key>CFBundleVersion</key>
-            <string>$VERSION</string>
-            <key>CFBundleShortVersionString</key>
-            <string>$VERSION</string>
-        </dict>
-        </plist>
-        EOF
-        
-        # Copy binary
-        cp build/tala-$VERSION-${{ matrix.name }} pkg/macos/Tala.app/Contents/MacOS/tala
-        chmod +x pkg/macos/Tala.app/Contents/MacOS/tala
-        
         # Create DMG
-        create-dmg \
-          --volname "Tala" \
-          --window-pos 200 120 \
-          --window-size 800 400 \
-          --icon-size 100 \
-          --app-drop-link 600 185 \
-          build/tala-$VERSION-macos-${{ matrix.goarch }}.dmg \
-          pkg/macos || echo "DMG creation failed, creating fallback"
+        mkdir -p dist
+        cp tala-${{ matrix.name }} dist/
+        cp tala-gui-${{ matrix.name }} dist/ || echo "No GUI binary"
         
-        # Fallback: create simple DMG
-        if [ ! -f build/tala-$VERSION-macos-${{ matrix.goarch }}.dmg ]; then
-          hdiutil create -format UDZO -srcfolder pkg/macos build/tala-$VERSION-macos-${{ matrix.goarch }}.dmg
-        fi
-        
-        # Create checksum
-        shasum -a 256 build/tala-$VERSION-macos-${{ matrix.goarch }}.dmg > build/tala-$VERSION-macos-${{ matrix.goarch }}.dmg.blockmap
+        # Create DMG using hdiutil
+        hdiutil create -volname "Tala" -srcfolder dist -ov -format UDZO tala-${{ matrix.name }}.dmg
 
     - name: Create checksums
       run: |
-        cd build
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          certutil -hashfile * SHA256 > checksums.txt 2>/dev/null || echo "Checksum creation completed"
+        # Create checksums for all artifacts
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          sha256sum tala-${{ matrix.name }}.exe > tala-${{ matrix.name }}.exe.sha256
+          [ -f "tala-gui-${{ matrix.name }}.exe" ] && sha256sum tala-gui-${{ matrix.name }}.exe > tala-gui-${{ matrix.name }}.exe.sha256
+          [ -f "tala-${{ matrix.name }}.zip" ] && sha256sum tala-${{ matrix.name }}.zip > tala-${{ matrix.name }}.zip.sha256
         else
-          shasum -a 256 * > checksums.txt 2>/dev/null || echo "Checksum creation completed"
+          sha256sum tala-${{ matrix.name }} > tala-${{ matrix.name }}.sha256
+          [ -f "tala-gui-${{ matrix.name }}" ] && sha256sum tala-gui-${{ matrix.name }} > tala-gui-${{ matrix.name }}.sha256
+          [ -f "tala-${{ matrix.name }}.dmg" ] && sha256sum tala-${{ matrix.name }}.dmg > tala-${{ matrix.name }}.dmg.sha256
+          [ -f "tala-${{ matrix.name }}.AppImage" ] && sha256sum tala-${{ matrix.name }}.AppImage > tala-${{ matrix.name }}.AppImage.sha256
         fi
-        echo "Build artifacts:"
-        ls -la
-      shell: bash
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: tala-${{ matrix.name }}
-        path: build/
-        retention-days: 5
+        path: |
+          tala-*
+          pkg/*
+        retention-days: 30
 
-  release:
-    needs: build
+  # Collect all artifacts and create release
+  create-release:
+    needs: release
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -348,152 +238,33 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        path: artifacts/
+        path: artifacts
 
     - name: Prepare release assets
       run: |
-        mkdir -p release
-        find artifacts/ -type f -name "tala-*" -exec cp {} release/ \;
-        find artifacts/ -type f -name "checksums.txt" -exec cp {} release/checksums-{}.txt \;
-        
-        # Create master checksums
-        cd release
-        shasum -a 256 tala-* > checksums.txt
-        echo "Release assets prepared:"
-        ls -la
+        mkdir -p release-assets
+        find artifacts -type f -name "tala-*" -exec cp {} release-assets/ \;
+        find artifacts -type f -name "*.deb" -exec cp {} release-assets/ \;
+        find artifacts -type f -name "*.rpm" -exec cp {} release-assets/ \;
+        find artifacts -type f -name "*.AppImage" -exec cp {} release-assets/ \;
+        find artifacts -type f -name "*.dmg" -exec cp {} release-assets/ \;
+        find artifacts -type f -name "*.zip" -exec cp {} release-assets/ \;
+        find artifacts -type f -name "*.sha256" -exec cp {} release-assets/ \;
+        ls -la release-assets/
 
-    - name: Get version info
+    - name: Get version
       id: version
       run: |
-        TAG_NAME=${GITHUB_REF#refs/tags/}
-        VERSION_NO_V=${TAG_NAME#v}
-        
-        echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-        echo "version_no_v=$VERSION_NO_V" >> $GITHUB_OUTPUT
-        
-        # Check if this is a pre-release
-        if [[ "$TAG_NAME" == *"-rc"* ]]; then
-          echo "is_prerelease=true" >> $GITHUB_OUTPUT
-          echo "release_type=Pre-release" >> $GITHUB_OUTPUT
-        else
-          echo "is_prerelease=false" >> $GITHUB_OUTPUT
-          if [[ "$TAG_NAME" =~ ^v[0-9]+\.0\.0$ ]]; then
-            echo "release_type=Major Release" >> $GITHUB_OUTPUT
-          else
-            echo "release_type=Release" >> $GITHUB_OUTPUT
-          fi
-        fi
+        echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-    - name: Get changelog
-      id: changelog
-      run: |
-        VERSION=${{ steps.version.outputs.version_no_v }}
-        
-        if grep -q "## \[$VERSION\]" CHANGELOG.md; then
-          CHANGELOG_SECTION=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
-          echo "changelog_found=true" >> $GITHUB_OUTPUT
-          echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG_SECTION" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        else
-          echo "changelog_found=false" >> $GITHUB_OUTPUT
-          echo "changelog_content=No changelog entry found for version $VERSION" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Create Release
+    - name: Create release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ steps.version.outputs.tag_name }}
-        name: ${{ steps.version.outputs.release_type }} ${{ steps.version.outputs.tag_name }}
-        body: |
-          ## ${{ steps.version.outputs.release_type }} ${{ steps.version.outputs.tag_name }}
-          
-          ### Changes
-          
-          ${{ steps.changelog.outputs.changelog_content }}
-          
-          ### Downloads
-          
-          Choose the appropriate package for your platform:
-          
-          #### Linux
-          | Format | Architecture | Download |
-          |--------|--------------|----------|
-          | Binary (TUI) | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-linux-amd64` |
-          | Binary (GUI) | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-linux-amd64-gui` |
-          | Binary (TUI) | ARM64 | `tala-${{ steps.version.outputs.tag_name }}-linux-arm64` |
-          | DEB Package | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-linux-amd64.deb` |
-          | RPM Package | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-linux-x86_64.rpm` |
-          | AppImage | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-linux-x86_64.AppImage` |
-          | Snap Package | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-linux-amd64.snap` |
-          | Archive | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-linux-x64.tar.xz` |
-          
-          #### Windows
-          | Format | Architecture | Download |
-          |--------|--------------|----------|
-          | Executable (TUI) | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-windows-amd64.exe` |
-          | Executable (GUI) | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-windows-amd64-gui.exe` |
-          | Executable (TUI) | ARM64 | `tala-${{ steps.version.outputs.tag_name }}-windows-arm64.exe` |
-          | Squirrel Package | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-squirrel.zip` |
-          
-          #### macOS
-          | Format | Architecture | Download |
-          |--------|--------------|----------|
-          | DMG (Intel) | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-macos-amd64.dmg` |
-          | DMG (Apple Silicon) | ARM64 | `tala-${{ steps.version.outputs.tag_name }}-macos-arm64.dmg` |
-          | Binary (Intel TUI) | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-macos-amd64` |
-          | Binary (Apple Silicon TUI) | ARM64 | `tala-${{ steps.version.outputs.tag_name }}-macos-arm64` |
-          | Binary (Intel GUI) | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-macos-amd64-gui` |
-          | Binary (Apple Silicon GUI) | ARM64 | `tala-${{ steps.version.outputs.tag_name }}-macos-arm64-gui` |
-          
-          #### FreeBSD
-          | Format | Architecture | Download |
-          |--------|--------------|----------|
-          | Binary (TUI) | AMD64 | `tala-${{ steps.version.outputs.tag_name }}-freebsd-amd64` |
-          
-          ### Installation
-          
-          **Linux/macOS/FreeBSD:**
-          ```bash
-          # Download the binary for your platform
-          chmod +x tala-*
-          ./tala-*
-          ```
-          
-          **Windows:**
-          ```cmd
-          # Download the .exe file for your platform
-          tala-*.exe
-          ```
-          
-          ### Prerequisites
-          
-          - For default setup: [Ollama](https://ollama.ai) with deepseek-r1 model
-          - For OpenAI/Anthropic: Valid API keys
-          
-          ### Quick Start
-          
-          ```bash
-          # Install Ollama and pull model (for default setup)
-          ollama serve
-          ollama pull deepseek-r1
-          
-          # Run Tala
-          ./tala-*
-          ```
-          
-          ### Verification
-          
-          Verify your download using the provided checksums:
-          ```bash
-          sha256sum -c checksums.txt
-          ```
-          
-          ---
-          
-          ${{ steps.version.outputs.is_prerelease == 'true' && '**Note**: This is a pre-release version and may contain bugs. Use for testing purposes only.' || 'For support and documentation, visit the [repository](https://github.com/domykasas/tala).' }}
-        files: release/*
+        tag_name: ${{ steps.version.outputs.version }}
+        name: Release ${{ steps.version.outputs.version }}
+        files: release-assets/*
         draft: false
-        prerelease: ${{ steps.version.outputs.is_prerelease }}
+        prerelease: ${{ contains(steps.version.outputs.version, '-rc') || contains(steps.version.outputs.version, '-beta') || contains(steps.version.outputs.version, '-alpha') }}
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

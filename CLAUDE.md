@@ -164,75 +164,45 @@ The GUI mode provides an enhanced graphical interface with all terminal features
 2. **Only if requested**: `go build` for specific binary creation
 3. **Never**: Proactive building without user request
 
-**Release Workflows**: The project uses a comprehensive multi-workflow architecture inspired by Shario for optimal release management:
+**Release Workflows**: The project uses a simple two-workflow architecture inspired by Shario:
 
 **go.yml** (Continuous Integration):
-- **Trigger**: Push/PR to main/develop branches
-- **Purpose**: Comprehensive testing and validation for all code changes
-- **Features**:
-  - **Multi-OS Testing**: Ubuntu, Windows, macOS
-  - **Cross-Compilation**: Tests all target platforms (Linux, Windows, macOS, FreeBSD)
-  - **Security Scanning**: Gosec, govulncheck, and SARIF reporting
-  - **Code Quality**: Staticcheck, golangci-lint, and coverage reporting
-  - **Build Validation**: Both TUI and GUI variants tested
+- **Trigger**: Push/PR to main and develop branches
+- **Purpose**: Continuous testing and validation on all platforms
+- **Platforms**: Ubuntu, Windows, macOS
+- **Features**: 
+  - Cross-platform testing with proper dependencies
+  - TUI and GUI build validation
+  - Static analysis, race detection, and coverage
+  - Artifact upload for coverage reports
 
-**release.yml** (Production Releases):
-- **Trigger**: Tag pushes (v*.*.*) + manual dispatch option
-- **Purpose**: Professional multi-platform release creation
-- **Architecture**: Matrix-based builds with artifact collection
-- **Platforms**: 
-  - Linux (amd64/arm64): DEB, RPM, Snap, AppImage, tar.xz, binaries
-  - Windows (amd64/arm64): Executables, Squirrel packages, binaries
-  - macOS (Intel/Apple Silicon): DMG, app bundles, binaries
-  - FreeBSD (amd64): Standalone binaries
-- **Features**:
-  - **Automated Packaging**: All major package formats created automatically
-  - **Comprehensive Checksums**: SHA256 verification for all assets
-  - **Professional Release Notes**: Detailed download tables and installation instructions
-  - **Changelog Integration**: Automatic extraction from CHANGELOG.md
-
-**snapcraft.yml** (Snap Package Workflow):
-- **Trigger**: Tag pushes + manual dispatch option
-- **Purpose**: Dedicated Snap package creation with multiple fallback strategies
-- **Strategies**: Destructive mode → Multipass → Docker fallbacks
-- **Features**:
-  - **Snap Testing**: Local installation and version verification
-  - **Store Publishing**: Ready for Snap Store integration (requires credentials)
-  - **Artifact Management**: Automatic upload to GitHub releases
-
-**pre-release.yml** (Automatic Pre-releases):
-- **Trigger**: Merged PRs to main branch
-- **Purpose**: Continuous testing and validation - provides immediate testing releases
-- **Version Pattern**: Auto-increments RC numbers using dot format (v0.1.0-rc.1, v0.1.0-rc.2, etc.)
-- **Preferred Format**: Always use `-rc.X` (with dot) instead of `-rcX` for consistency
-- **Benefit**: Stakeholders can test features immediately after merge without manual intervention
+**release.yml** (Release Automation):
+- **Trigger**: Tag pushes (`v*`)
+- **Purpose**: Multi-platform binary builds and package creation
+- **Build Matrix**: 
+  - Linux: amd64/arm64 (DEB, RPM, AppImage, Snap)
+  - Windows: amd64/arm64 (ZIP archives)
+  - macOS: amd64/arm64 (DMG files)
+  - FreeBSD: amd64 (raw binaries)
+- **Package Types**: Comprehensive packaging for all major distributions
+- **Checksums**: SHA256 verification for all artifacts
 
 **Development Workflow**:
 ```
 Development → PR → go.yml (CI testing)
-            ↓
-         Merge → pre-release.yml → v0.1.0-rc.1 (automatic)
-                                → v0.1.0-rc.2 (automatic)
-            ↓
-Ready for release → Create tag → Push tag → release.yml + snapcraft.yml → v0.1.0 (manual)
+Ready for release → Create tag → Push tag → release.yml → GitHub Release
 ```
 
 **Manual Release Process**:
-1. Create tag: `git tag v0.1.1-rc.1` (use `-rc.X` format for pre-releases)
-2. Push tag: `git push origin v0.1.1-rc.1`
-3. GitHub Actions will automatically:
-   - Build all platform binaries and packages
-   - Create comprehensive release with download tables
-   - Generate SHA256 checksums for verification
-   - Build and test Snap packages
+1. Create tag: `git tag v1.0.3`
+2. Push tag: `git push origin v1.0.3`
+3. GitHub Actions automatically builds and creates the release
 
 **Architecture Benefits**:
-- ✅ **Comprehensive Platform Support**: Linux, Windows, macOS, FreeBSD
-- ✅ **Professional Packaging**: DEB, RPM, Snap, AppImage, DMG, and more
-- ✅ **Automated Quality Control**: Multi-OS testing, security scanning, coverage
-- ✅ **Reliable Snap Building**: Dedicated workflow with fallback strategies  
-- ✅ **Enterprise-Ready**: Professional release notes, checksums, and verification
-- ✅ **Shario-Inspired**: Proven multi-platform build approach
+- ✅ Simple and maintainable (only 2 workflows)
+- ✅ Comprehensive platform coverage
+- ✅ Professional packaging for all distributions
+- ✅ Reliable and proven approach (based on Shario)
 
 ### Dependencies
 ```bash
