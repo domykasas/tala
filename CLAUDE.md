@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **UI Frameworks**: Simple terminal I/O (TUI), Fyne (GUI)  
 - **Architecture**: Modular internal packages (ai, config, fileops, tui, gui)
 - **Build Modes**: TUI (default), GUI
-- **Current Version**: 1.0.2
+- **Current Version**: 1.0.7
 
 ## Development Philosophy
 
@@ -60,7 +60,7 @@ Files to update for every version bump:
 ## Prerequisites
 
 - Go 1.24.4 or later (as specified in go.mod)
-- For default setup: Ollama with deepseek-r1 model
+- For default setup: Ollama with llama3.2:1b model
 - For OpenAI/Anthropic: Valid API keys
 
 ## Development Commands
@@ -251,6 +251,7 @@ tala/
 │   │   ├── provider.go  # Provider interface and implementations
 │   │   ├── provider_test.go # Provider tests
 │   │   ├── intent.go    # AI-powered intent detection
+│   │   ├── intent_test.go # Intent detection tests
 │   │   ├── tools.go     # File operation tools for AI
 │   │   └── tools_test.go # AI tools tests
 │   ├── fileops/         # File system operations
@@ -259,11 +260,16 @@ tala/
 │   │   ├── fileops_test.go # File operations tests
 │   │   └── commands_test.go # Command tests
 │   ├── tui/             # Terminal UI components
-│   │   └── model.go     # Bubble Tea model implementation
+│   │   └── simple.go    # Simple terminal implementation
 │   └── gui/             # GUI components
 │       └── app.go       # Fyne GUI application
+├── .github/workflows/   # CI/CD workflows
+│   ├── go.yml          # Continuous integration
+│   ├── release.yml     # Release automation
+│   └── snapcraft.yml   # Snap package workflow
 ├── go.mod              # Go module file
 ├── go.sum              # Go module checksums
+├── snapcraft.yaml      # Snap package configuration
 ├── README.md           # Main documentation
 ├── CHANGELOG.md        # Version history (Keep a Changelog format)
 ├── ROADMAP.md          # Development roadmap
@@ -277,7 +283,7 @@ tala/
 
 ### Default Configuration Values
 - Provider: `ollama`
-- Model: `deepseek-r1`
+- Model: `llama3.2:1b`
 - Temperature: `0.7`
 - Max Tokens: `0` (no limit)
 - System Prompt: `"You are a helpful AI assistant."`
@@ -291,18 +297,18 @@ The application validates:
 ## Architecture Overview
 
 ### Core Components
-- **main.go**: TUI entry point that initializes config and starts Bubble Tea interface
+- **main.go**: TUI entry point that initializes config and starts simple terminal interface
 - **main_gui.go**: GUI entry point for Fyne-based graphical interface
 - **internal/config/**: Configuration management with JSON file at `~/.config/tala/config.json`
 - **internal/ai/**: Provider interface pattern supporting OpenAI, Anthropic, and Ollama
-- **internal/tui/**: Bubble Tea-based terminal interface with no alt-screen mode for copy-paste functionality
+- **internal/tui/**: Simple terminal interface with standard library I/O and ANSI color support
 - **internal/gui/**: Fyne-based graphical interface with chat window and settings dialog
 - **internal/fileops/**: File system operations with command parsing and AI tool integration
 
 ### Architecture Patterns
 
 #### Build Constraint System
-- **TUI Mode**: `//go:build !gui` - Default terminal interface (Bubble Tea)
+- **TUI Mode**: `//go:build !gui` - Default terminal interface (simple I/O)
 - **GUI Mode**: `//go:build gui` - Graphical interface using Fyne framework
 - **Conditional Compilation**: Allows platform-specific builds and deployment flexibility
 - **Provider Compatibility**: Both modes support the same AI provider interface
@@ -342,13 +348,13 @@ Tala includes comprehensive operations capabilities:
 
 ## Key Implementation Details
 
-### TUI Model Structure
-The `tui.Model` struct manages application state:
-- `input`: Current user input string
-- `loading`: Boolean for request state
-- `provider`: AI provider instance
-- `config`: Configuration reference
-- Statistics tracking (tokens, requests, timing)
+### TUI Implementation
+The `tui.SimpleTUI` struct manages terminal interface:
+- Uses standard library I/O with bufio.Scanner
+- ANSI color support for enhanced readability
+- Real-time statistics display
+- Copy-paste friendly (no alt-screen mode)
+- Signal handling for graceful shutdown
 
 ### Message Flow
 1. User types input and presses Enter
@@ -433,7 +439,7 @@ User Input → Starts with '/'? → YES → Direct Command Execution
 2. **Ollama connection failed**
    ```bash
    ollama serve
-   ollama pull deepseek-r1
+   ollama pull llama3.2:1b
    ```
 
 3. **Config file permissions**
@@ -632,7 +638,7 @@ DEBUG=1 ./tala          # Debug mode inline
 - `main_gui.go` - GUI application entry point
 - `internal/config/config.go` - Configuration management
 - `internal/ai/provider.go` - AI provider implementations
-- `internal/tui/model.go` - Terminal UI logic
+- `internal/tui/simple.go` - Terminal UI logic
 - `internal/gui/app.go` - Fyne GUI implementation
 
 ### Important Environment Variables

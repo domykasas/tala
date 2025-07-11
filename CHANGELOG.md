@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] - 2025-07-11
+
+### Updated
+- **Project Documentation**: Updated CLAUDE.md with accurate project structure and implementation details
+  - Corrected TUI implementation from "Bubble Tea" to "Simple terminal I/O" 
+  - Updated default model from "deepseek-r1" to "llama3.2:1b"
+  - Added missing files and proper directory structure
+  - Fixed architecture descriptions to match actual codebase
+
+### Enhanced
+- **Development Guidance**: Improved CLAUDE.md accuracy for better development workflow
+
 ## [1.0.6] - 2025-07-11
 
 ### Fixed
