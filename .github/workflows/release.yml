@@ -209,16 +209,28 @@ jobs:
     - name: Create checksums
       run: |
         # Create checksums for all artifacts
+        echo "Creating checksums for ${{ matrix.name }} on ${{ matrix.goos }}..."
+        ls -la
+        
         if [ "${{ matrix.goos }}" = "windows" ]; then
-          sha256sum tala-${{ matrix.name }}.exe > tala-${{ matrix.name }}.exe.sha256
+          # Windows artifacts
+          [ -f "tala-${{ matrix.name }}.exe" ] && sha256sum tala-${{ matrix.name }}.exe > tala-${{ matrix.name }}.exe.sha256
           [ -f "tala-gui-${{ matrix.name }}.exe" ] && sha256sum tala-gui-${{ matrix.name }}.exe > tala-gui-${{ matrix.name }}.exe.sha256
           [ -f "tala-${{ matrix.name }}.zip" ] && sha256sum tala-${{ matrix.name }}.zip > tala-${{ matrix.name }}.zip.sha256
         else
-          sha256sum tala-${{ matrix.name }} > tala-${{ matrix.name }}.sha256
+          # Non-Windows artifacts
+          [ -f "tala-${{ matrix.name }}" ] && sha256sum tala-${{ matrix.name }} > tala-${{ matrix.name }}.sha256
           [ -f "tala-gui-${{ matrix.name }}" ] && sha256sum tala-gui-${{ matrix.name }} > tala-gui-${{ matrix.name }}.sha256
           [ -f "tala-${{ matrix.name }}.dmg" ] && sha256sum tala-${{ matrix.name }}.dmg > tala-${{ matrix.name }}.dmg.sha256
           [ -f "tala-${{ matrix.name }}.AppImage" ] && sha256sum tala-${{ matrix.name }}.AppImage > tala-${{ matrix.name }}.AppImage.sha256
         fi
+        
+        # Create checksums for package files
+        [ -f "pkg/tala_${{ steps.version.outputs.version_no_v }}_${{ matrix.goarch }}.deb" ] && sha256sum pkg/tala_${{ steps.version.outputs.version_no_v }}_${{ matrix.goarch }}.deb > pkg/tala_${{ steps.version.outputs.version_no_v }}_${{ matrix.goarch }}.deb.sha256
+        [ -f "pkg/tala-${{ steps.version.outputs.version_no_v }}-1.${{ matrix.goarch }}.rpm" ] && sha256sum pkg/tala-${{ steps.version.outputs.version_no_v }}-1.${{ matrix.goarch }}.rpm > pkg/tala-${{ steps.version.outputs.version_no_v }}-1.${{ matrix.goarch }}.rpm.sha256
+        
+        echo "Checksums created:"
+        ls -la *.sha256 pkg/*.sha256 2>/dev/null || echo "No checksum files found"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4

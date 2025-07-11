@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.11] - 2025-07-11
+
+### Fixed
+- **Release Workflow**: Fixed checksum generation failures in GitHub Actions release workflow
+  - Added proper file existence checks before creating checksums
+  - Improved error handling for missing artifacts
+  - Added debug logging to identify file availability issues
+  - Enhanced checksum creation for package files (DEB, RPM)
+  - Prevented build failures when optional files don't exist
+
+### Enhanced
+- **Build Reliability**: Improved release workflow robustness with better artifact handling
+
 ## [1.0.10] - 2025-07-11
 
 ### Fixed
