@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.8] - 2025-07-11
+
+### Fixed
+- **Snapcraft Workflow**: Fixed snapcraft installation error in GitHub Actions
+  - Added proper systemd service start/enable for snapd
+  - Implemented retry logic for snapcraft installation
+  - Added service readiness waiting with sleep
+  - Enhanced error handling and verification
+  - Made multipass installation optional with graceful failure
+
+### Enhanced
+- **CI/CD Reliability**: Improved snap build workflow robustness for consistent package creation
+
 ## [1.0.7] - 2025-07-11
 
 ### Updated

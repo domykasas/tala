@@ -61,11 +61,29 @@ jobs:
         # Install snapd if not present
         sudo apt-get install -y snapd
         
-        # Install snapcraft via snap
-        sudo snap install snapcraft --classic
+        # Start and enable snapd service
+        sudo systemctl start snapd
+        sudo systemctl enable snapd
         
-        # Install multipass for fallback builds
-        sudo snap install multipass --classic || echo "Multipass installation failed, continuing"
+        # Wait for snapd to be ready
+        sleep 10
+        
+        # Install snapcraft via snap with retries
+        for i in {1..3}; do
+          if sudo snap install snapcraft --classic; then
+            echo "✓ Snapcraft installed successfully"
+            break
+          else
+            echo "✗ Snapcraft installation attempt $i failed, retrying..."
+            sleep 5
+          fi
+        done
+        
+        # Install multipass for fallback builds (optional)
+        sudo snap install multipass --classic || echo "Multipass installation failed, continuing without it"
+        
+        # Verify snapcraft installation
+        snapcraft --version || echo "Snapcraft verification failed"
 
     - name: Update snapcraft.yaml version
       run: |
