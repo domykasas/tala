@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.14] - 2025-07-11
+
+### Enhanced
+- **Release Experience**: Added comprehensive GitHub release notes with professional formatting
+  - Added detailed download tables for all platforms (Linux, Windows, macOS, FreeBSD)
+  - Included platform-specific installation instructions and package formats
+  - Added security verification instructions with SHA256 checksums
+  - Enhanced release description with key features and quick start guide
+  - Professional release naming with consistent branding
+  - Comprehensive documentation links and support information
+  - Emojis and formatting for better visual presentation like Shario
+
+### Improved
+- **User Experience**: Significantly improved release discovery and download experience for end users
+
 ## [1.0.13] - 2025-07-11
 
 ### Fixed
