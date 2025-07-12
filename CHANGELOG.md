@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.13] - 2025-07-11
+
+### Fixed
+- **Cross-Platform Compatibility**: Fixed multiple platform-specific issues in GitHub Actions workflows
+  - **macOS Build**: Fixed checksum command error by using `shasum -a 256` instead of `sha256sum` on macOS
+  - **Windows Build**: Added `shell: bash` directive to all build steps to prevent PowerShell syntax errors
+  - **Linux Build**: Removed failed apt-get snapcraft installation (handled separately in snapcraft workflow)
+  - **Platform Detection**: Enhanced platform-specific command selection for better cross-platform support
+
+### Enhanced
+- **Build Reliability**: Significantly improved workflow success rate across all supported platforms (Linux, Windows, macOS, FreeBSD)
+
 ## [1.0.12] - 2025-07-11
 
 ### Fixed

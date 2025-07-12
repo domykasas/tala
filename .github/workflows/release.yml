@@ -93,6 +93,7 @@ jobs:
         echo "version_no_v=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
     - name: Build TUI binary
+      shell: bash
       env:
         CGO_ENABLED: 0
         GOOS: ${{ matrix.goos }}
@@ -107,6 +108,7 @@ jobs:
 
     - name: Build GUI binary
       if: matrix.goos != 'freebsd'
+      shell: bash
       env:
         CGO_ENABLED: 1
         GOOS: ${{ matrix.goos }}
@@ -121,11 +123,12 @@ jobs:
 
     - name: Create packages (Linux)
       if: matrix.packages && matrix.goos == 'linux'
+      shell: bash
       run: |
         VERSION=${{ steps.version.outputs.version_no_v }}
         
         # Install packaging tools
-        sudo apt-get install -y snapcraft
+        # Note: snapcraft installation removed - handled by snap in snapcraft workflow
         go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
         
         # Create directories
@@ -213,22 +216,29 @@ jobs:
         echo "Creating checksums for ${{ matrix.name }} on ${{ matrix.goos }}..."
         ls -la
         
+        # Determine the correct checksum command for the platform
+        if [ "${{ matrix.goos }}" = "darwin" ]; then
+          CHECKSUM_CMD="shasum -a 256"
+        else
+          CHECKSUM_CMD="sha256sum"
+        fi
+        
         if [ "${{ matrix.goos }}" = "windows" ]; then
           # Windows artifacts
-          [ -f "tala-${{ matrix.name }}.exe" ] && sha256sum tala-${{ matrix.name }}.exe > tala-${{ matrix.name }}.exe.sha256
-          [ -f "tala-gui-${{ matrix.name }}.exe" ] && sha256sum tala-gui-${{ matrix.name }}.exe > tala-gui-${{ matrix.name }}.exe.sha256
-          [ -f "tala-${{ matrix.name }}.zip" ] && sha256sum tala-${{ matrix.name }}.zip > tala-${{ matrix.name }}.zip.sha256
+          [ -f "tala-${{ matrix.name }}.exe" ] && $CHECKSUM_CMD tala-${{ matrix.name }}.exe > tala-${{ matrix.name }}.exe.sha256
+          [ -f "tala-gui-${{ matrix.name }}.exe" ] && $CHECKSUM_CMD tala-gui-${{ matrix.name }}.exe > tala-gui-${{ matrix.name }}.exe.sha256
+          [ -f "tala-${{ matrix.name }}.zip" ] && $CHECKSUM_CMD tala-${{ matrix.name }}.zip > tala-${{ matrix.name }}.zip.sha256
         else
           # Non-Windows artifacts
-          [ -f "tala-${{ matrix.name }}" ] && sha256sum tala-${{ matrix.name }} > tala-${{ matrix.name }}.sha256
-          [ -f "tala-gui-${{ matrix.name }}" ] && sha256sum tala-gui-${{ matrix.name }} > tala-gui-${{ matrix.name }}.sha256
-          [ -f "tala-${{ matrix.name }}.dmg" ] && sha256sum tala-${{ matrix.name }}.dmg > tala-${{ matrix.name }}.dmg.sha256
-          [ -f "tala-${{ matrix.name }}.AppImage" ] && sha256sum tala-${{ matrix.name }}.AppImage > tala-${{ matrix.name }}.AppImage.sha256
+          [ -f "tala-${{ matrix.name }}" ] && $CHECKSUM_CMD tala-${{ matrix.name }} > tala-${{ matrix.name }}.sha256
+          [ -f "tala-gui-${{ matrix.name }}" ] && $CHECKSUM_CMD tala-gui-${{ matrix.name }} > tala-gui-${{ matrix.name }}.sha256
+          [ -f "tala-${{ matrix.name }}.dmg" ] && $CHECKSUM_CMD tala-${{ matrix.name }}.dmg > tala-${{ matrix.name }}.dmg.sha256
+          [ -f "tala-${{ matrix.name }}.AppImage" ] && $CHECKSUM_CMD tala-${{ matrix.name }}.AppImage > tala-${{ matrix.name }}.AppImage.sha256
         fi
         
         # Create checksums for package files
-        [ -f "pkg/tala_${{ steps.version.outputs.version_no_v }}_${{ matrix.goarch }}.deb" ] && sha256sum pkg/tala_${{ steps.version.outputs.version_no_v }}_${{ matrix.goarch }}.deb > pkg/tala_${{ steps.version.outputs.version_no_v }}_${{ matrix.goarch }}.deb.sha256
-        [ -f "pkg/tala-${{ steps.version.outputs.version_no_v }}-1.${{ matrix.goarch }}.rpm" ] && sha256sum pkg/tala-${{ steps.version.outputs.version_no_v }}-1.${{ matrix.goarch }}.rpm > pkg/tala-${{ steps.version.outputs.version_no_v }}-1.${{ matrix.goarch }}.rpm.sha256
+        [ -f "pkg/tala_${{ steps.version.outputs.version_no_v }}_${{ matrix.goarch }}.deb" ] && $CHECKSUM_CMD pkg/tala_${{ steps.version.outputs.version_no_v }}_${{ matrix.goarch }}.deb > pkg/tala_${{ steps.version.outputs.version_no_v }}_${{ matrix.goarch }}.deb.sha256
+        [ -f "pkg/tala-${{ steps.version.outputs.version_no_v }}-1.${{ matrix.goarch }}.rpm" ] && $CHECKSUM_CMD pkg/tala-${{ steps.version.outputs.version_no_v }}-1.${{ matrix.goarch }}.rpm > pkg/tala-${{ steps.version.outputs.version_no_v }}-1.${{ matrix.goarch }}.rpm.sha256
         
         echo "Checksums created:"
         ls -la *.sha256 pkg/*.sha256 2>/dev/null || echo "No checksum files found"
