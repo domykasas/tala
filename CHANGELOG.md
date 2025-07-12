@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.15] - 2025-07-12
+
+### Enhanced
+- **Development Workflow**: Added high-performance development patterns to CLAUDE.md
+  - Systematic task management with TodoWrite tool for complex multi-step tasks
+  - Parallel tool execution for optimal performance and response batching
+  - Context continuity maintenance for seamless conversation flow
+  - Progressive task completion with immediate todo status updates
+  - Focused execution without unnecessary preamble or explanations
+  - Consistent version control discipline (commit → tag → push commits → push tags)
+
+### Improved
+- **Project Documentation**: Enhanced guidance for future Claude Code instances with proven workflow patterns
+- **Development Efficiency**: Documented successful patterns from recent release management cycles
+
 ## [1.0.14] - 2025-07-11
 
 ### Enhanced

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **UI Frameworks**: Simple terminal I/O (TUI), Fyne (GUI)  
 - **Architecture**: Modular internal packages (ai, config, fileops, tui, gui)
 - **Build Modes**: TUI (default), GUI
-- **Current Version**: 1.0.14
+- **Current Version**: 1.0.15
 
 ## Development Philosophy
 
@@ -17,6 +17,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Problem-Focused**: Understand root causes systematically before implementing solutions
 - **Minimal Changes**: Make targeted, minimal modifications to achieve goals
 - **Documentation-First**: Always update documentation after modifications
+
+### High-Performance Development Patterns
+- **Systematic Task Management**: Use TodoWrite tool proactively to track complex multi-step tasks
+- **Parallel Tool Execution**: Batch multiple tool calls in single responses for optimal performance
+- **Context Continuity**: Maintain conversation flow by continuing from where previous work left off
+- **Progressive Task Completion**: Mark todos as completed immediately after finishing each step
+- **Focused Execution**: Address user requests directly without unnecessary preamble or explanations
+- **Version Control Discipline**: Follow consistent git workflow (commit → tag → push commits → push tags)
 
 ### Dependency Philosophy
 - **Minimal Dependencies**: Use as few external modules as possible
